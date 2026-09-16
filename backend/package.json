@@ -7,19 +7,23 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  }, 
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:generate": "npx prisma generate",
+    "prisma:studio": "npx prisma studio",
+    "prisma:seed": "node prisma/semilla.js"
+  },
   "dependencies": {
-    "@prisma/client": "7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "argon2": "^0.44.0",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "cors": "^2.8.6",
-    "argon2": "^0.44.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "prisma": "7.10.0"
+    "prisma": "^7.10.0"
   }
 }
