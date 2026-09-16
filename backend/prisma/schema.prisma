@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +5,74 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model Region {
+  codigo    Int       @id @default(autoincrement())
+  nombre    String    @db.VarChar(200)
+  comunas   Comuna[]
+
+  @@map("region")
+}
+
+model Comuna {
+  codigo         Int       @id @default(autoincrement())
+  nombre         String    @db.VarChar(200)
+  codigoRegion   Int       @map("codigo_region")
+  region         Region    @relation(fields: [codigoRegion], references: [codigo], onDelete: Cascade)
+  personas       Persona[]
+
+  @@map("comuna")
+}
+
+model Persona {
+  rut             String      @id @db.VarChar(12)
+  nombre          String      @db.VarChar(200)
+  primerApellido  String      @map("primer_apellido") @db.VarChar(200)
+  segundoApellido String?     @map("segundo_apellido") @db.VarChar(200)
+  fechaNacimiento DateTime    @map("fecha_nacimiento") @db.Date
+  telefono        String      @db.VarChar(20)
+  email           String      @unique @db.VarChar(150)
+  fechaRegistro   DateTime    @default(now()) @map("fecha_registro")
+  hasSoftDelete   Boolean     @default(false) @map("has_soft_delete")
+  codigoComuna    Int         @map("codigo_comuna")
+
+  comuna          Comuna      @relation(fields: [codigoComuna], references: [codigo])
+  cliente         Cliente?
+  trabajador      Trabajador? 
+  usuario         Usuario?
+
+  @@map("persona")
+}
+
+model Cliente {
+  rut     String  @id @db.VarChar(12)
+  activo  Boolean @default(true)
+
+  persona Persona @relation(fields: [rut], references: [rut], onDelete: Cascade)
+
+  @@map("cliente")
+}
+
+model Trabajador {
+  rut                   String   @id @db.VarChar(12)
+  esExterno             Boolean  @default(false) @map("es_externo")
+  sueldo                Int? 
+  activo                Boolean  @default(true)
+
+  persona               Persona  @relation(fields: [rut], references: [rut], onDelete: Cascade)
+
+  @@map("trabajador")
+}
+
+model Usuario {
+  rut           String   @id @db.VarChar(12)
+  password      String   @db.VarChar(255)
+  rol           String   @db.VarChar(50)
+  ultimoAcceso  DateTime @map("ultimo_acceso")
+  activo        Boolean  @default(true)
+
+  persona       Persona  @relation(fields: [rut], references: [rut], onDelete: Cascade)
+
+  @@map("usuario")
 }
