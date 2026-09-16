@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import prisma from '../src/config/prisma.js';
 import argon2 from "argon2";
 
