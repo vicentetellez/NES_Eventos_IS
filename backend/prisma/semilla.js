@@ -1,5 +1,6 @@
 import prisma from '../src/config/prisma.js';
 import argon2 from "argon2";
+import { ARGON2_TYPE, ARGON2_MEMORY_COST, ARGON2_TIME_COST, ARGON2_PARALLELISM } from '../src/config/configEnv.js';
 
 async function seedRegiones(){
     try {
@@ -434,13 +435,13 @@ async function seedPersonas(){
         const  countPersona = await prisma.persona.count();
         if(countPersona === 0){
             const personas = [
-                { rut: '00000000-0', nombre: 'ADMIN', primerApellido: 'ADMIN', segundoApellido: 'ADMIN', fechaNacimiento: new Date('2000-01-01'), telefono: '000000000', email: 'default.user@example.com', codigoComuna: 295 },
-                { rut: '12345678-9', nombre: 'Juan', primerApellido: 'Pérez', segundoApellido: 'Gómez', fechaNacimiento: new Date('1990-01-01'), telefono: '123456789', email: 'juan.perez@example.com', codigoComuna: 181 },
-                { rut: '98765432-1', nombre: 'María', primerApellido: 'López', segundoApellido: 'Martínez', fechaNacimiento: new Date('1992-02-02'), telefono: '987654321', email: 'maria.lopez@example.com', codigoComuna: 181 },
-                { rut: '11223344-5', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
-                { rut: '55667788-9', nombre: 'Ana', primerApellido: 'Torres', segundoApellido: 'Vega', fechaNacimiento: new Date('1995-04-04'), telefono: '556677889', email: 'ana.torres@example.com', codigoComuna: 181 },
-                { rut: '66778899-0', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
-                { rut: '77889900-1', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 }            
+                { rut: '11111111-1', nombre: 'ADMIN', primerApellido: 'ADMIN', segundoApellido: 'ADMIN', fechaNacimiento: new Date('2000-01-01'), telefono: '000000000', email: 'default.user@example.com', codigoComuna: 295 },
+                { rut: '12345678-5', nombre: 'Juan', primerApellido: 'Pérez', segundoApellido: 'Gómez', fechaNacimiento: new Date('1990-01-01'), telefono: '123456789', email: 'juan.perez@example.com', codigoComuna: 181 },
+                { rut: '98765432-5', nombre: 'María', primerApellido: 'López', segundoApellido: 'Martínez', fechaNacimiento: new Date('1992-02-02'), telefono: '987654321', email: 'maria.lopez@example.com', codigoComuna: 181 },
+                { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
+                { rut: '55667788-3', nombre: 'Ana', primerApellido: 'Torres', segundoApellido: 'Vega', fechaNacimiento: new Date('1995-04-04'), telefono: '556677889', email: 'ana.torres@example.com', codigoComuna: 181 },
+                { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
+                { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 }            
             ];  
             await prisma.persona.createMany({ data: personas });
             console.log('Personas sembradas correctamente.');
@@ -458,8 +459,8 @@ async function seedClientes(){
         const countCliente = await prisma.cliente.count();
         if(countCliente === 0){
             const clientes = [
-                { rut: '12345678-9'},
-                { rut: '98765432-1'}
+                { rut: '12345678-5'},
+                { rut: '98765432-5'}
 
             ];
             await prisma.cliente.createMany({ data: clientes });
@@ -478,8 +479,8 @@ async function seedTrabajadores(){
         const countTrabajador = await prisma.trabajador.count();
         if(countTrabajador === 0){
             const trabajadores = [
-                { rut: '11223344-5', esExterno: false, sueldo: 900000 },
-                { rut: '55667788-9', esExterno: true }
+                { rut: '11223344-K', esExterno: false, sueldo: 900000 },
+                { rut: '55667788-3', esExterno: true }
             ];
             await prisma.trabajador.createMany({ data: trabajadores });
             console.log('Trabajadores sembrados correctamente.');
@@ -497,16 +498,16 @@ async function seedUsuarios(){
         const countUsuario = await prisma.usuario.count();
         if(countUsuario === 0){
             const usuarios = [
-                { rut: '00000000-0', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date() },
-                { rut: '66778899-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() },
-                { rut: '77889900-1', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() }
+                { rut: '11111111-1', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date() },
+                { rut: '66778899-4', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() },
+                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() }
             ];
             for (const usuario of usuarios) {
                 const passwordHash = await argon2.hash(usuario.password, {
-                    type: argon2.argon2id,
-                    memoryCost: 15630,
-                    timeCost: 3,
-                    parallelism: 4,
+                    type: ARGON2_TYPE,
+                    memoryCost: parseInt(ARGON2_MEMORY_COST),
+                    timeCost: parseInt(ARGON2_TIME_COST),
+                    parallelism: parseInt(ARGON2_PARALLELISM),
                 });
                 usuario.password = passwordHash;
             }
