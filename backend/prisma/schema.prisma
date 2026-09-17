@@ -68,7 +68,7 @@ model Trabajador {
 model Usuario {
   rut           String   @id @db.VarChar(12)
   password      String   @db.VarChar(255)
-  rol           String   @db.VarChar(50)
+  rol           String   @db.VarChar(50) @default("STAFF")
   ultimoAcceso  DateTime @map("ultimo_acceso")
   activo        Boolean  @default(true)
 
