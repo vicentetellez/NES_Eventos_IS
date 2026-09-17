@@ -4,6 +4,10 @@ import prisma from '../config/prisma.js';
 import { JWT_SECRET } from "../config/configEnv.js";
 import { AppError } from "../helpers/responses.js";
 
+export async function me(rut){
+    const user = await prisma.usuario.findUniqueOrThrow({ select: { rut: true, rol: true }, where: { rut } });
+    return (user);
+}
 
 export async function loginService(data){
     const user = await prisma.usuario.findUnique({ select: { rut: true, password: true, rol: true }, where: { rut: data.rut } });
