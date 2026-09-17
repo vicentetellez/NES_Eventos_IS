@@ -6,6 +6,15 @@ import {
 } from '../services/auth.service.js';
 
 
+export const meController = async (req, res, next) => {
+    try {
+        const result = await me(req.user.rut);
+        response.success(res, 200, 'Información del usuario', result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const loginController = async (req, res, next) => {
     try {
         const result = await loginService(req.body);
