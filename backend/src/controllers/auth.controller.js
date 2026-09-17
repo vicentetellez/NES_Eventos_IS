@@ -30,3 +30,16 @@ export const loginController = async (req, res, next) => {
     }
 };
 
+export const logoutController = async (req, res, next) => {
+    try {
+        res.clearCookie('access_token', 
+                    { 
+                        httpOnly: true, 
+                        secure: NODE_ENV === 'production', // Es a true en producción si se usa HTTPS
+                        sameSite: 'lax' 
+                    });
+        response.success(res, 200, 'Logout exitoso');
+    } catch (error) {
+        next(error);
+    }
+};
