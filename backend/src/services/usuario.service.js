@@ -7,6 +7,17 @@ import { AppError } from '../helpers/responses.js'
 import { createPersona } from './persona.service.js'
 import { ARGON2_TYPE, ARGON2_MEMORY_COST, ARGON2_TIME_COST, ARGON2_PARALLELISM } from '../config/configEnv.js';
 
+// Evita dejar el sistema sin ningún ADMIN activo al degradar/desactivar una cuenta.
+async function ensureNotLastActiveAdmin(rutExcluido) {
+    const otrosAdminsActivos = await prisma.usuario.count({
+        where: { rol: 'ADMIN', activo: true, NOT: { rut: rutExcluido } }
+    });
+    if (otrosAdminsActivos === 0) {
+        throw new AppError('No se puede modificar: es el último ADMIN activo del sistema', 400);
+    }
+}
+
+
 export async function getAllUsuariosByFilterStatus(filtroActivo) {
     const usuarios = await prisma.usuario.findMany({
         where: { activo: filtroActivo },
