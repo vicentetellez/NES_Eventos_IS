@@ -14,3 +14,17 @@ export const authLimiter = rateLimit({
     standardHeaders: true,   
     legacyHeaders: false, 
 });
+
+// Limitador para endpoints de cambio/reseteo de contraseña (previene fuerza bruta sobre currentPassword)
+export const passwordChangeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // Ventana de tiempo: 15 minutos
+    max: 8, // Límite: Máximo 8 intentos por IP dentro de los 15 minutos
+
+    message: {
+        status: 429,
+        message: 'Demasiados intentos de cambio de contraseña. Por favor, inténtalo de nuevo en 15 minutos.'
+    },
+
+    standardHeaders: true,
+    legacyHeaders: false,
+});
