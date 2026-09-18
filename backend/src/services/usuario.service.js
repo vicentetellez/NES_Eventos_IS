@@ -142,3 +142,24 @@ export async function updateUsuario(rut, usuario, persona){
 
 }
 
+export async function changeUsuarioStatus(rut, activo){
+    // Validamos que el usuario exista antes de intentar cambiar su estado
+    const existingUsuario = await prisma.usuario.findUnique({
+        where: { rut }
+    });
+    if (!existingUsuario) throw new AppError('Usuario no encontrado', 404);
+    // Validamos si se quiere cambiar a un estado que ya tiene el usuario
+    if (existingUsuario.activo === activo){
+        if (activo) throw new AppError('El usuario ya está activo', 400);
+        if (!activo) throw new AppError('El usuario ya está inactivo', 400);
+    }
+    // Evitamos desactivar al último ADMIN activo del sistema
+    if (existingUsuario.rol === 'ADMIN' && activo === false) {
+        await ensureNotLastActiveAdmin(rut);
+    }
+    await prisma.usuario.update({
+        where: { rut },
+        data: { activo: activo }
+    });
+}
+
