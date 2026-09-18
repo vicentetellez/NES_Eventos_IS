@@ -20,3 +20,22 @@ export function verifyRoles(...rolesPermitidos) {
         }
     };
 }
+
+// Bloquea cualquier acción hasta que el usuario cambie una contraseña provisoria (asignada por un reset de ADMIN).
+export async function blockIfPasswordChangeRequired(req, res, next) {
+    try {
+        const usuario = await prisma.usuario.findUnique({
+            where: { rut: req.user.rut },
+            select: { debeCambiarPassword: true }
+        });
+        if (!usuario) return next(new AppError("Sesión inválida", 401));
+
+        if (usuario.debeCambiarPassword) {
+            return next(new AppError("Debe cambiar su contraseña provisoria antes de continuar", 403));
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
+}
