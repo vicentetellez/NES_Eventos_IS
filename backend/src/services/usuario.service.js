@@ -105,3 +105,40 @@ export async function createUsuario(usuario, persona){
     return { usuario: usuarioSeguro, persona: personaData };
 }
 
+export async function updateUsuario(rut, usuario, persona){
+    // Validamos que el usuario exista antes de intentar actualizarlo
+    const existingUsuario = await prisma.usuario.findUnique({
+        where: { rut }
+    });
+    if (!existingUsuario) throw new AppError('Usuario no encontrado', 404);
+
+    // Si se está degradando el rol de un ADMIN, evitamos dejar el sistema sin administradores
+    if (existingUsuario.rol === 'ADMIN' && usuario?.rol && usuario.rol !== 'ADMIN') {
+        await ensureNotLastActiveAdmin(rut);
+    }
+    
+    // Si el rut esta asociado a un usuario existente, podemos proceder con la actualización
+    let updatedUsuario;
+    let updatedPersona;
+    // Modificamos sus datos de usuario si se enviaron
+    if (usuario){
+        const usuarioActualizado = await prisma.usuario.update({
+            where: { rut },
+            data: usuario
+        });
+        const { password: _password, ...usuarioActualizadoSeguro } = usuarioActualizado;
+        updatedUsuario = usuarioActualizadoSeguro;
+    }
+    // Modificamos sus datos de persona si se enviaron
+    if (persona){
+        updatedPersona = await prisma.persona.update({
+            where: { rut },
+            data: persona
+        });
+    }
+
+    // Retornamos el usuario actualizado junto con la persona asociada
+    return { usuario: updatedUsuario, datoModificadoUsuario: usuario, persona: updatedPersona, datoModificadoPersona: persona };
+
+}
+
