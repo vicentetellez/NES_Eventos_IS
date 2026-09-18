@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { validate } from '../middlewares/validate.middlewares.js';
 import { authLimiter } from '../middlewares/rateLimit.middleware.js';
 import { authenticateJwt } from "../middlewares/authentication.middleware.js";
+import { blockIfNotActive } from '../middlewares/authorization.middleware.js';
 import { loginSchema } from '../schemas/auth.schema.js';
 import { 
     meController,
@@ -14,7 +15,8 @@ const router = Router();
 
 
 router.get('/me', 
-            authenticateJwt, 
+            authenticateJwt,
+            blockIfNotActive,
             meController);
 router.post('/login', 
             authLimiter,
