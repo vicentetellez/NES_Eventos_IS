@@ -14,7 +14,11 @@ export const validate = (schema, target = 'body') => {
       });
     }
 
-    req[target] = result.data;
+    if (target === 'query') {
+      req.validatedQuery = result.data;
+    } else {
+      req[target] = result.data;
+    }
     next();
   };
 };
