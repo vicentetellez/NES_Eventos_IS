@@ -7,6 +7,32 @@ import { AppError } from '../helpers/responses.js'
 import { createPersona } from './persona.service.js'
 import { ARGON2_TYPE, ARGON2_MEMORY_COST, ARGON2_TIME_COST, ARGON2_PARALLELISM } from '../config/configEnv.js';
 
+export async function getAllUsuariosByFilterStatus(filtroActivo) {
+    const usuarios = await prisma.usuario.findMany({
+        where: { activo: filtroActivo },
+        select: {
+            rol: true,
+            activo: true,
+            fechaRegistro: true,
+            persona: {
+                select: {
+                    rut: true,
+                    nombre: true,
+                    primerApellido: true,
+                    segundoApellido: true
+                }
+            }
+        }
+    });
+
+    if (usuarios.length === 0) {
+        if (filtroActivo) throw new AppError(`No hay usuarios activos registrados`, 404);
+        if (!filtroActivo) throw new AppError(`No hay usuarios inactivos registrados`, 404);
+    }
+
+    return { usuarios };
+}
+
 // La logica es que cuando un ADMIN crea un usuario, primero se crea la persona asociada si se proporciona información de persona.
 // Esto asegura que la persona exista antes de crear el usuario, evitando errores de integridad referencial.
 // Luego se procede a crear el usuario con la referencia a la persona existente.
