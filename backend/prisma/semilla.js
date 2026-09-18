@@ -498,9 +498,9 @@ async function seedUsuarios(){
         const countUsuario = await prisma.usuario.count();
         if(countUsuario === 0){
             const usuarios = [
-                { rut: '11111111-1', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date() },
-                { rut: '66778899-4', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() },
-                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date() }
+                { rut: '11111111-1', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date(), debeCambiarPassword: false },
+                { rut: '66778899-4', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: false },
+                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: true }
             ];
             for (const usuario of usuarios) {
                 const passwordHash = await argon2.hash(usuario.password, {
