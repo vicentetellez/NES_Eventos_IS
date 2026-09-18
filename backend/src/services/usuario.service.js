@@ -33,6 +33,23 @@ export async function getAllUsuariosByFilterStatus(filtroActivo) {
     return { usuarios };
 }
 
+export async function getUsuarioByRut(rut) {
+    const usuario = await prisma.usuario.findUnique({
+        where: { rut },
+        select: {
+            rol: true,
+            activo: true,
+            debeCambiarPassword: true,
+            ultimoAcceso: true,
+            fechaRegistro: true,
+            persona: true
+        }
+    });
+    if (!usuario) throw new AppError('Usuario no encontrado', 404);
+
+    return { usuario };
+}
+
 // La logica es que cuando un ADMIN crea un usuario, primero se crea la persona asociada si se proporciona información de persona.
 // Esto asegura que la persona exista antes de crear el usuario, evitando errores de integridad referencial.
 // Luego se procede a crear el usuario con la referencia a la persona existente.
