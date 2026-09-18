@@ -1,10 +1,10 @@
-import { AppError} from '../helpers/responses.js';
+import { AppError } from '../helpers/responses.js';
+import prisma from '../config/prisma.js';
 
-export function verifyRoles(rolesPermitidos) {
+export function verifyRoles(...rolesPermitidos) {
     return (req, res, next) => {
         try {
-            const userRole = req.user?.rol || null;
-
+            const userRole = req.user.rol || null;
             if (!userRole) {
                 return next(new AppError("Token invalido o expirado", 401));
             }
