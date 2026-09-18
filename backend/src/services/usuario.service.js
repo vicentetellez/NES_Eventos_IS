@@ -163,3 +163,30 @@ export async function changeUsuarioStatus(rut, activo){
     });
 }
 
+// Auto-cambio: el propio usuario cambia su password acreditando la actual (req.user.rut).
+export async function changeOwnPassword(rut, currentPassword, newPassword){
+    const existingUsuario = await prisma.usuario.findUnique({
+        where: { rut }
+    });
+    if (!existingUsuario) throw new AppError('Usuario no encontrado', 404);
+
+    // Acreditamos que quien cambia la password conoce la actual
+    const isCurrentPasswordValid = await argon2.verify(existingUsuario.password, currentPassword);
+    if (!isCurrentPasswordValid) throw new AppError('La contraseña actual es incorrecta', 401);
+
+    // Validamos que la nueva password no sea igual a la actual
+    if (currentPassword === newPassword) throw new AppError('La nueva password no puede ser igual a la actual', 400);
+
+    const passwordHashed = await argon2.hash(newPassword, {
+        type: ARGON2_TYPE,
+        memoryCost: ARGON2_MEMORY_COST,
+        timeCost: ARGON2_TIME_COST,
+        parallelism: ARGON2_PARALLELISM,
+    });
+
+    await prisma.usuario.update({
+        where: { rut },
+        data: { password: passwordHashed, debeCambiarPassword: false }
+    });
+}
+
