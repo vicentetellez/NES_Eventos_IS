@@ -38,4 +38,20 @@ export async function blockIfPasswordChangeRequired(req, res, next) {
         next(error);
     }
 }
+
+export async function blockIfNotActive(req, res, next) {
+    try {
+        const usuario = await prisma.usuario.findUnique({
+            where: { rut: req.user.rut },
+            select: { activo: true }
+        });
+        if (!usuario) return next(new AppError("Sesión inválida", 401));
+
+        if (!usuario.activo) {
+            return next(new AppError("Usuario inactivo", 403));
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
 }
