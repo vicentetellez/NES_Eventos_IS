@@ -190,3 +190,32 @@ export async function changeOwnPassword(rut, currentPassword, newPassword){
     });
 }
 
+// Reset administrativo: un ADMIN restablece la password de otro usuario sin acreditar la actual.
+export async function resetUsuarioPassword(rut, newPassword, callerRut){
+    // El reset administrativo no reemplaza el auto-cambio: evita que un ADMIN se resetee a sí mismo sin currentPassword
+    if (rut === callerRut) throw new AppError('Para cambiar tu propia contraseña usa el endpoint de auto-cambio', 400);
+
+    // Validamos que el usuario exista antes de intentar cambiar su password
+    const existingUsuario = await prisma.usuario.findUnique({
+        where: { rut }
+    });
+    if (!existingUsuario) throw new AppError('Usuario no encontrado', 404);
+
+    // Validamos que la nueva password no sea igual a la actual
+    const isSamePassword = await argon2.verify(existingUsuario.password, newPassword);
+    if (isSamePassword) throw new AppError('La nueva password no puede ser igual a la actual', 400);
+
+    // Hasheamos la nueva password antes de actualizarla en la base de datos
+    const passwordHashed = await argon2.hash(newPassword, {
+        type: ARGON2_TYPE,
+        memoryCost: ARGON2_MEMORY_COST,
+        timeCost: ARGON2_TIME_COST,
+        parallelism: ARGON2_PARALLELISM,
+    });
+
+    // La password es provisoria: se obliga a cambiarla en el próximo login
+    await prisma.usuario.update({
+        where: { rut },
+        data: { password: passwordHashed, debeCambiarPassword: true }
+    });
+}
