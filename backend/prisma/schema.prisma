@@ -48,33 +48,328 @@ model Cliente {
   activo          Boolean     @default(true)
   fechaRegistro   DateTime    @default(now()) @map("fecha_registro") @db.Timestamptz(3)
 
-  persona         Persona   @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  persona         Persona     @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  eventos         Evento[]
 
   @@map("cliente")
 }
 
-model Trabajador {
-  rut                   String   @id @db.VarChar(12)
-  esExterno             Boolean  @default(false) @map("es_externo")
-  sueldo                Int? 
-  activo                Boolean  @default(true)
-  fechaRegistro         DateTime @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+model Trabajador {                      
+  rut                   String                        @id @db.VarChar(12)
+  esExterno             Boolean                       @default(false) @map("es_externo")
+  sueldo                Int?                      
+  activo                Boolean                       @default(true)
+  fechaRegistro         DateTime                      @default(now()) @map("fecha_registro") @db.Timestamptz(3)
 
-  persona               Persona  @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  persona               Persona                       @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  especialidades        TrabajadorTieneEspecialidad[]
+  participaciones       TrabajadorParticipaEvento[]
+  evaluaciones          EvaluacionTrabajador[]
 
   @@map("trabajador")
 }
 
 model Usuario {
-  rut                 String   @id @db.VarChar(12)
-  password            String   @db.VarChar(255)
-  rol                 String   @db.VarChar(50) @default("STAFF")
-  ultimoAcceso        DateTime @default(now()) @map("ultimo_acceso") @db.Timestamptz(3)
-  activo              Boolean  @default(true)
-  debeCambiarPassword Boolean  @default(true) @map("debe_cambiar_password")
-  fechaRegistro       DateTime @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  rut                       String        @id @db.VarChar(12)
+  password                  String        @db.VarChar(255)
+  rol                       String        @db.VarChar(50) @default("STAFF")
+  ultimoAcceso              DateTime      @default(now()) @map("ultimo_acceso") @db.Timestamptz(3)
+  activo                    Boolean       @default(true)
+  debeCambiarPassword       Boolean       @default(true) @map("debe_cambiar_password")
+  fechaRegistro             DateTime      @default(now()) @map("fecha_registro") @db.Timestamptz(3)
 
-  persona       Persona  @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  persona                   Persona       @relation(fields: [rut], references: [rut], onDelete: Cascade)
+  eventosPagoAbono          Evento[]      @relation("UsuarioPagoAbono")
+  eventosPagoFinal          Evento[]      @relation("UsuarioPagoFinal")
+  presupuestosDictaminados  Presupuesto[]
 
   @@map("usuario")
+}
+
+model TipoEvento {
+  codigo                    Int         @id @default(autoincrement()) @map("codigo")
+  nombre                    String      @db.VarChar(100)
+  descripcion               String?     @db.Text
+  tarifaHoraBaseReferencial Int         @map("tarifa_hora_base_referencial")
+  activo                    Boolean     @default(true) @map("activo")
+
+  // Relaciones
+  plantillas                Plantilla[]
+  eventos                   Evento[]
+
+  @@map("tipo_evento")
+}
+
+model CentroEvento {
+  codigo            Int      @id @default(autoincrement()) @map("codigo")
+  nombre            String   @db.VarChar(150)
+  direccionExacta   String?  @map("direccion_exacta") @db.VarChar(255)
+  capacidadPersonas Int      @map("capacidad_personas")
+  nombreDueno       String?  @map("nombre_dueno") @db.VarChar(100)
+  telefonoDueno     String?  @map("telefono_dueno") @db.VarChar(20)
+  activo            Boolean  @default(true) @map("activo")
+
+  // Relaciones
+  eventos           Evento[]
+
+  @@map("centro_evento")
+}
+
+model Banqueteria {
+  codigo                   Int                        @id @default(autoincrement()) @map("codigo")
+  nombre                   String                     @db.VarChar(200)
+  descripcion              String?                    @db.Text
+  precioPersonaReferencial Int                        @map("precio_persona_referencial")
+  activo                   Boolean                    @default(true) @map("activo")
+
+  // Relaciones
+  eventosBanqueteria       EventoTieneBanqueteria[]
+
+  @@map("banqueteria")
+}
+
+model Categoria {
+  codigo  Int      @id @default(autoincrement()) @map("codigo")
+  nombre  String   @db.VarChar(200)
+
+  // Relaciones
+  equipos Equipo[]
+
+  @@map("categoria")
+}
+
+model Equipo {
+  codigo                  Int                   @id @default(autoincrement()) @map("codigo")
+  nombre                  String                @db.VarChar(200)
+  esExterno               Boolean               @default(false) @map("es_externo")
+
+  // SI NO ES EXTERNO, SI ES EXTERNO ESTO ES NULO
+  stockTotal              Int?                  @map("stock_total")
+  stockNoDisponible       Int?                  @default(0) @map("stock_no_disponible")
+  // SI ES EXTERNO, SI NO ES EXTERNO ESTO ES NULO
+  proveedor               String?               @db.VarChar(100)
+  telefonoProveedor       String?               @map("telefono_proveedor") @db.VarChar(20)
+  arriendoHoraReferencial Int?                  @map("arriendo_hora_referencial")
+
+  codigoCategoria         Int                   @map("codigo_categoria")
+
+  // Relaciones
+  categoria               Categoria             @relation(fields: [codigoCategoria], references: [codigo])
+  plantillas              Plantilla[]
+  eventosEquipo           EventoUtilizaEquipo[]
+
+  @@map("equipo")
+}
+
+model Especialidad {
+  codigo            Int                           @id @default(autoincrement()) @map("codigo")
+  nombre            String                        @db.VarChar(200)
+  // DETERMINA SI LA ESPECIALIDAD VA A SALIR EN LA EVALUACION DE TRABAJADORES
+  esEvaluable       Boolean                       @default(true) @map("es_evaluable")
+
+  // Relaciones
+  trabajadores      TrabajadorTieneEspecialidad[]
+  plantillas        Plantilla[]
+  participaciones   TrabajadorParticipaEvento[]
+  evaluaciones      EvaluacionTrabajador[]
+
+  @@map("especialidad")
+}
+
+model TrabajadorTieneEspecialidad {
+  rutTrabajador      String       @map("rut_trabajador") @db.VarChar(12)
+  codigoEspecialidad Int          @map("codigo_especialidad")
+
+  // Relaciones
+  trabajador         Trabajador   @relation(fields: [rutTrabajador], references: [rut])
+  especialidad       Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
+
+  @@id([rutTrabajador, codigoEspecialidad])
+  @@map("trabajador_tiene_especialidad")
+}
+
+model Plantilla {
+  codigo             Int           @id @default(autoincrement()) @map("codigo")
+  // PERMITE CALCULAR LA CANTIDAD NECESARIA DE EQUIPO O ESPECIALIDADES SEGÚN LA CANTIDAD DE INVITADOS
+  // PARA CADA EVENTO, EJEMPLO:
+  // Si se requiere guardar que para un evento se necesitan parlantes y se sabe que para 1 matrimonio
+  // se necesitan 5 parlantes, entonces queda:
+  // cantidadFija = 5
+  // ratioInvitados = 0
+  // Se coloca que la cantidad fija es 5 y el ratio por invitados es 0, ya que independiente de la cantidad de invitados, siempre se necesitan 5 parlantes.
+  // En otro caso, si se requieren meseros la cosa cambia, para un matrimonio con 100 invitados y se necesita 1 mesero por cada 20 invitados:
+  // cantidadFija = 0
+  // ratioInvitados = 20
+  // Esto permite que la plantilla sea flexible y se pueda ajustar según la cantidad de invitados y los requerimientos específicos de cada evento.
+  // Se pueden combinar cantidadFija y ratioInvitados según las necesidades del evento. La lógica de cálculo debe considerar ambos valores para determinar la cantidad final requerida.
+  // Ejemplo de combinación:
+  // cantidadFija = 2
+  // ratioInvitados = 10
+  // Esto significa que siempre se necesitan 2 unidades del recurso, más 1 unidad adicional por cada 10 invitados.
+  // La idea del calculo es que sea : cantidadFija + (cantidadInvitados / ratioInvitados)
+  // Por ejemplo, si cantidadFija = 2, ratioInvitados = 10 y hay 50 invitados:
+  // cantidad final requerida = 2 + (50 / 10) = 7 unidades del recurso.
+  // Si el número da decimal por la división, se puede redondear hacia arriba para asegurar que haya suficientes unidades del recurso.
+  cantidadFija       Int?          @map("cantidad_fija")
+  ratioInvitados     Int?          @map("ratio_invitados")
+
+  codigoTipoEvento   Int           @map("codigo_tipo_evento")
+  codigoEquipo       Int?          @map("codigo_equipo")
+  codigoEspecialidad Int?          @map("codigo_especialidad")
+
+  // Relaciones
+  tipoEvento         TipoEvento    @relation(fields: [codigoTipoEvento], references: [codigo])
+  equipo             Equipo?       @relation(fields: [codigoEquipo], references: [codigo])
+  especialidad       Especialidad? @relation(fields: [codigoEspecialidad], references: [codigo])
+
+  @@map("plantilla")
+}
+
+model Evento {
+  codigo                   Int                          @id @default(autoincrement()) @map("codigo")
+  codigoEvaluacion         Int                          @map("codigo_evaluacion")
+  estado                   String                       @db.VarChar(50)
+  fechaEvento              DateTime                     @map("fecha_evento") @db.Date
+  horaInicio               DateTime                     @map("hora_inicio") @db.Time
+  horasEvento              Int                          @map("horas_evento")
+  horasMontajeDesmontaje   Int?                         @map("horas_montaje_desmontaje")
+  cantidadPersonas         Int                          @map("cantidad_personas")
+  fechaRegistro            DateTime                     @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  
+  fechaPagoAbono           DateTime?                    @map("fecha_pago_abono")
+  rutUsuarioPagoAbono      String?                      @map("rut_usuario_pago_abono") @db.VarChar(12)
+  fechaPagoFinal           DateTime?                    @map("fecha_pago_final")
+  rutUsuarioPagoFinal      String?                      @map("rut_usuario_pago_final") @db.VarChar(12)
+
+  tipoEventoCliente        String?                      @map("tipo_evento_cliente") @db.VarChar(150)
+  centroEventoCliente      String?                      @map("centro_evento_cliente") @db.VarChar(300)
+
+  restriccionesAlimentarias String?                     @map("restricciones_alimentarias") @db.Text
+  comentariosAlcohol       String?                      @map("comentarios_alcohol") @db.Text
+  comentariosAdicionales   String?                      @map("comentarios_adicionales") @db.Text
+
+  codigoTipoEvento         Int?                         @map("codigo_tipo_evento")
+  codigoCentroEvento       Int?                         @map("codigo_centro_evento")
+  rutCliente               String                       @map("rut_cliente") @db.VarChar(12)
+
+  // Relaciones
+  tipoEvento               TipoEvento?                  @relation(fields: [codigoTipoEvento], references: [codigo])
+  centroEvento             CentroEvento?                @relation(fields: [codigoCentroEvento], references: [codigo])
+  cliente                  Cliente                      @relation(fields: [rutCliente], references: [rut])
+  usuarioPagoAbono         Usuario?                     @relation("UsuarioPagoAbono", fields: [rutUsuarioPagoAbono], references: [rut])
+  usuarioPagoFinal         Usuario?                     @relation("UsuarioPagoFinal", fields: [rutUsuarioPagoFinal], references: [rut])
+
+  equipos                  EventoUtilizaEquipo[]
+  banqueterias             EventoTieneBanqueteria[]
+  participaciones          TrabajadorParticipaEvento[]
+  presupuestos             Presupuesto[]
+  evaluacionEvento         EvaluacionEvento?
+  evaluacionesTrabajadores EvaluacionTrabajador[]
+
+  @@map("evento")
+}
+
+model EventoUtilizaEquipo {
+  codigoEquipo  Int     @map("codigo_equipo")
+  codigoEvento  Int     @map("codigo_evento")
+  cantidadUsada Int     @map("cantidad_usada")
+
+  equipo        Equipo  @relation(fields: [codigoEquipo], references: [codigo])
+  evento        Evento  @relation(fields: [codigoEvento], references: [codigo])
+
+  @@id([codigoEquipo, codigoEvento])
+  @@map("evento_utiliza_equipo")
+}
+
+model EventoTieneBanqueteria {
+  codigoEvento      Int         @map("codigo_evento")
+  codigoBanquete    Int         @map("codigo_banquete")
+  cantidadRequerida Int         @map("cantidad_requerida")
+
+  evento            Evento      @relation(fields: [codigoEvento], references: [codigo])
+  banqueteria       Banqueteria @relation(fields: [codigoBanquete], references: [codigo])
+
+  @@id([codigoEvento, codigoBanquete])
+  @@map("evento_tiene_banqueteria")
+}
+
+model TrabajadorParticipaEvento {
+  rutTrabajador      String       @map("rut_trabajador") @db.VarChar(12)
+  codigoEspecialidad Int          @map("codigo_especialidad")
+  codigoEvento       Int          @map("codigo_evento")
+  minutosTrabajador  Int          @map("minutos_trabajados") 
+  tarifaHoraAcordada Int          @map("tarifa_hora_acordada")
+
+  trabajador         Trabajador   @relation(fields: [rutTrabajador], references: [rut])
+  especialidad       Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
+  evento             Evento       @relation(fields: [codigoEvento], references: [codigo])
+
+  @@id([rutTrabajador, codigoEspecialidad, codigoEvento])
+  @@map("trabajador_participa_evento")
+}
+
+model Presupuesto {
+  codigo                           Int                  @id @default(autoincrement()) @map("codigo")
+  estado                           String               @db.VarChar(100)
+  fechaDictamen                    DateTime?            @map("fecha_dictamen") @db.Timestamptz(3)
+  tarifaHoraBase                   Int                  @map("tarifa_hora_base")
+  porcentajeBeneficioEquipoExterno Int?                 @map("porcentaje_beneficio_equipo_externo")
+  total                            Int
+  rutUsuarioDictamen               String?              @map("rut_usuario_dictamen") @db.VarChar(12)
+  codigoEvento                     Int                  @map("codigo_evento")
+
+  usuarioDictamen                  Usuario?             @relation(fields: [rutUsuarioDictamen], references: [rut])
+  evento                           Evento               @relation(fields: [codigoEvento], references: [codigo])
+  detalles                         DetallePresupuesto[]
+
+  @@map("presupuesto")
+}
+
+model DetallePresupuesto {
+  codigo            Int         @id @default(autoincrement()) @map("codigo")
+  categoria         String      @db.VarChar(100)
+  descripcion       String?     @db.Text
+  cantidad          Int
+  precioUnitario    Int         @map("precio_unitario") 
+  subtotal          Int   
+  codigoPresupuesto Int         @map("codigo_presupuesto")
+
+  presupuesto       Presupuesto @relation(fields: [codigoPresupuesto], references: [codigo])
+
+  @@map("detalle_presupuesto")
+}
+
+model EvaluacionEvento {
+  codigo               Int      @id @default(autoincrement()) @map("codigo")
+  calidadPuntualidad   Boolean  @map("calidad_puntualidad")
+  calidadTecnica       Boolean  @map("calidad_tecnica")
+  calidadAtencion      Boolean  @map("calidad_atencion")
+  fidelidadPresupuesto Boolean  @map("fidelidad_presupuesto")
+  satisfaccion         Boolean  @map("satisfaccion")
+  recomendacion        Boolean  @map("recomendacion")
+  puntajeTotal         Decimal  @map("puntaje_total") @db.Decimal(4, 2)
+  comentarioAdicional  String?  @map("comentario_adicional") @db.Text
+  fechaRegistro        DateTime @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  codigoEvento         Int      @unique @map("codigo_evento")
+
+  evento               Evento   @relation(fields: [codigoEvento], references: [codigo])
+
+  @@map("evaluacion_evento")
+}
+
+model EvaluacionTrabajador {
+  codigo               Int          @id @default(autoincrement()) @map("codigo")
+  calificacion         Decimal      @map("calificacion") @db.Decimal(4, 2)
+  comentarioEspecifico String?      @map("comentario_especifico") @db.Text
+  esAutogenerado       Boolean      @default(true) @map("es_autogenerado")
+  fechaRegistro        DateTime     @default(now()) @map("fecha_registro") @db.Timestamptz(3)
+  codigoEvento         Int          @map("codigo_evento")
+  codigoEspecialidad   Int          @map("codigo_especialidad")
+  rutTrabajador        String       @map("rut_trabajador") @db.VarChar(12)
+
+  evento               Evento       @relation(fields: [codigoEvento], references: [codigo])
+  especialidad         Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
+  trabajador           Trabajador   @relation(fields: [rutTrabajador], references: [rut])
+
+  @@map("evaluacion_trabajador")
 }
