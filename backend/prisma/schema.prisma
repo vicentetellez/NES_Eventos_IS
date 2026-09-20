@@ -88,7 +88,7 @@ model Usuario {
 
 model TipoEvento {
   codigo                    Int         @id @default(autoincrement()) @map("codigo")
-  nombre                    String      @db.VarChar(100)
+  nombre                    String      @unique @db.VarChar(100)
   descripcion               String?     @db.Text
   tarifaHoraBaseReferencial Int         @map("tarifa_hora_base_referencial")
   activo                    Boolean     @default(true) @map("activo")
@@ -102,7 +102,7 @@ model TipoEvento {
 
 model CentroEvento {
   codigo            Int      @id @default(autoincrement()) @map("codigo")
-  nombre            String   @db.VarChar(150)
+  nombre            String   @unique @db.VarChar(150)
   direccionExacta   String?  @map("direccion_exacta") @db.VarChar(255)
   capacidadPersonas Int      @map("capacidad_personas")
   nombreDueno       String?  @map("nombre_dueno") @db.VarChar(100)
@@ -117,7 +117,7 @@ model CentroEvento {
 
 model Banqueteria {
   codigo                   Int                        @id @default(autoincrement()) @map("codigo")
-  nombre                   String                     @db.VarChar(200)
+  nombre                   String                     @unique @db.VarChar(200)
   descripcion              String?                    @db.Text
   precioPersonaReferencial Int                        @map("precio_persona_referencial")
   activo                   Boolean                    @default(true) @map("activo")
