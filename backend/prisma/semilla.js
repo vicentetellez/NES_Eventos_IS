@@ -581,7 +581,7 @@ async function seedBanqueteria(){
         if(countBanqueteria === 0){
             const banqueterias = [
                 { nombre: 'Menú 3 tiempos', descripcion: 'Incluye entrada, plato principal y postre, alimentos conversables', precioPersonaReferencial: 27000 },
-                { nombre: 'Coctel liviano', descripcion: 'Incluye  una variedad de picoteos y aperitivos', precioPersonaReferencial: 10000 }
+                { nombre: 'Coctel liviano', descripcion: 'Incluye una variedad de picoteos y aperitivos', precioPersonaReferencial: 10000 }
             ];
             await prisma.banqueteria.createMany({ data: banqueterias });
             console.log('Banqueteria sembrada correctamente.');
