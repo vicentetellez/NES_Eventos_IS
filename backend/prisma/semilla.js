@@ -522,6 +522,77 @@ async function seedUsuarios(){
     }
 }
 
+async function seedTipoEventos(){
+    try {
+        const countTipoEvento = await prisma.tipoEvento.count();
+        if(countTipoEvento === 0){
+            const tiposEvento = [
+                { nombre: 'Arriendo de Escenarios y Mobiliario', descripcion: 'Usted puede alquilar equipamiento y mobiliario para sus eventos (No incluye producción del evento)', tarifaHoraBaseReferencial: 0 },
+                { nombre: 'Seminarios', descripcion: 'Eventos educativos o formativos que reúnen a un grupo de personas para tratar un tema específico', tarifaHoraBaseReferencial: 30000 },
+                { nombre: 'Congresos', descripcion: 'Reuniones formales de profesionales de un mismo sector para discutir temas de interés común', tarifaHoraBaseReferencial: 30000 },
+                { nombre: 'Licenciaturas', descripcion: 'Ceremonias de graduación de estudiantes', tarifaHoraBaseReferencial: 35000 },
+                { nombre: 'Ceremonias Academicas', descripcion: 'Eventos formales relacionados con instituciones educativas', tarifaHoraBaseReferencial: 35000 },
+                { nombre: 'Shows Artísticos', descripcion: 'Presentaciones en vivo de artistas y grupos musicales', tarifaHoraBaseReferencial: 60000 },
+                { nombre: 'Conciertos', descripcion: 'Eventos musicales en vivo con gran afluencia de público', tarifaHoraBaseReferencial: 60000 },
+                { nombre: 'Fiestas Empresariales', descripcion: 'Eventos corporativos para celebrar logros o motivar al personal', tarifaHoraBaseReferencial: 30000 },
+                { nombre: 'Cenas de Gala', descripcion: 'Eventos formales con cena incluida', tarifaHoraBaseReferencial: 35000 },
+                { nombre: 'Corporativos', descripcion: 'Eventos organizados por empresas para diversos fines', tarifaHoraBaseReferencial: 20000 },
+                { nombre: 'Matrimonios', descripcion: 'Ceremonias y celebraciones de bodas', tarifaHoraBaseReferencial: 20000 },
+                { nombre: 'Aniversarios', descripcion: 'Celebraciones de aniversarios personales o corporativos', tarifaHoraBaseReferencial: 20000 },
+            ];
+            await prisma.tipoEvento.createMany({ data: tiposEvento });
+            console.log('Tipos de eventos sembrados correctamente.');
+        }
+        else {
+            console.log('Tipos de eventos ya existen en la base de datos.');
+        }
+    } catch(error) {
+        console.error('Error al sembrar tipos de eventos:', error);
+    }
+}
+
+async function seedCentroEventos(){
+    try {
+        const countCentroEvento = await prisma.centroEvento.count();
+        if(countCentroEvento === 0){
+            const centrosEvento = [
+                { nombre: 'Centro de Eventos la Cúpula', direccionExacta: 'Concepción', capacidadPersonas: 1000 },
+                { nombre: 'Espacio Pérgola', direccionExacta: 'Concepción', capacidadPersonas: 500 },
+                { nombre: 'Salón los Nogales', direccionExacta: 'Concepción', capacidadPersonas: 300 },
+                { nombre: 'Centro Cultural el Parque', direccionExacta: 'Concepción', capacidadPersonas: 400},
+                { nombre: 'Bodega 15', direccionExacta: 'Concepción', capacidadPersonas: 800 },
+                { nombre: 'Hotel Kennedy', direccionExacta: 'Concepción', capacidadPersonas: 250 },
+                { nombre: 'Espacio Riesco', direccionExacta: 'Concepción', capacidadPersonas: 2000 }
+            ];
+            await prisma.centroEvento.createMany({ data: centrosEvento });
+            console.log('Centros de eventos sembrados correctamente.');
+        }
+        else {
+            console.log('Centros de eventos ya existen en la base de datos.');
+        }
+    } catch(error) {
+        console.error('Error al sembrar centros de eventos:', error);
+    }
+}
+
+async function seedBanqueteria(){
+    try {
+        const countBanqueteria = await prisma.banqueteria.count();
+        if(countBanqueteria === 0){
+            const banqueterias = [
+                { nombre: 'Menú 3 tiempos', descripcion: 'Incluye entrada, plato principal y postre, alimentos conversables', precioPersonaReferencial: 27000 },
+                { nombre: 'Coctel liviano', descripcion: 'Incluye  una variedad de picoteos y aperitivos', precioPersonaReferencial: 10000 }
+            ];
+            await prisma.banqueteria.createMany({ data: banqueterias });
+            console.log('Banqueteria sembrada correctamente.');
+        }
+        else {
+            console.log('Banqueteria ya existe en la base de datos.');
+        }
+    } catch(error) {
+        console.error('Error al sembrar banqueteria:', error);
+    }
+}
 
 
 
@@ -536,6 +607,9 @@ async function main(){
     await seedClientes();
     await seedTrabajadores();
     await seedUsuarios();
+    await seedTipoEventos();
+    await seedCentroEventos();
+    await seedBanqueteria();
 }
 
 main()
