@@ -16,6 +16,8 @@ export const validate = (schema, target = 'body') => {
 
     if (target === 'query') {
       req.validatedQuery = result.data;
+    } else if (target === 'params') {
+      req.validatedParams = result.data;
     } else {
       req[target] = result.data;
     }
