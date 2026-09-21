@@ -30,7 +30,7 @@ model Persona {
   nombre          String      @db.VarChar(200)
   primerApellido  String      @map("primer_apellido") @db.VarChar(200)
   segundoApellido String?     @map("segundo_apellido") @db.VarChar(200)
-  fechaNacimiento DateTime    @map("fecha_nacimiento") @db.Date
+  fechaNacimiento DateTime?   @map("fecha_nacimiento") @db.Date
   telefono        String      @db.VarChar(20)
   email           String      @unique @db.VarChar(150)
   codigoComuna    Int         @map("codigo_comuna")
@@ -130,7 +130,7 @@ model Banqueteria {
 
 model Categoria {
   codigo  Int      @id @default(autoincrement()) @map("codigo")
-  nombre  String   @db.VarChar(200)
+  nombre  String   @unique @db.VarChar(200)
 
   // Relaciones
   equipos Equipo[]
@@ -140,7 +140,7 @@ model Categoria {
 
 model Equipo {
   codigo                  Int                   @id @default(autoincrement()) @map("codigo")
-  nombre                  String                @db.VarChar(200)
+  nombre                  String                @unique @db.VarChar(200)
   esExterno               Boolean               @default(false) @map("es_externo")
 
   // SI NO ES EXTERNO, SI ES EXTERNO ESTO ES NULO
@@ -163,7 +163,7 @@ model Equipo {
 
 model Especialidad {
   codigo            Int                           @id @default(autoincrement()) @map("codigo")
-  nombre            String                        @db.VarChar(200)
+  nombre            String                        @unique @db.VarChar(200)
   // DETERMINA SI LA ESPECIALIDAD VA A SALIR EN LA EVALUACION DE TRABAJADORES
   esEvaluable       Boolean                       @default(true) @map("es_evaluable")
 
