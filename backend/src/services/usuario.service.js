@@ -66,43 +66,50 @@ export async function getUsuarioByRut(rut) {
 // Luego se procede a crear el usuario con la referencia a la persona existente.
 // Si no se proporciona información de persona, se asume que la persona ya existe en la base de datos.
 export async function createUsuario(usuario, persona){
-    let personaData;
-    // Si viene información de persona, la creamos antes de crear el usuario.
-    if (persona){
-        personaData = {
-            ...persona,
-            fechaNacimiento: new Date(persona.fechaNacimiento)
-        };
-        await createPersona(personaData);
-    }
-    // Si no viene información de persona, verificamos que la persona ya exista en la base de datos. (Por integridad)
-    const existingPersona = await prisma.persona.findUnique({
-        where: { rut: usuario.rut }
-    });
-    if (!existingPersona) throw new AppError(`No existe persona en el sistema con el RUT ${usuario.rut}`, 404);
-    
-    
-    // Validamos que el rut no exista previamente como un Usuario antes de intentar crearlo.
-    const existingUsuario = await prisma.usuario.findUnique({
-        where: { rut: usuario.rut }
-    });
-    if (existingUsuario) throw new AppError('El usuario ya existe', 400);
-
-
-    // Si el usuario no existe, aseguramos la password entregada por el usuario
+    // Hasheamos la contraseña del usuario antes del transactinal para que Prisma no malinterprese si el hash se demora mucho
     const passwordHashed = await argon2.hash(usuario.password, {
         type: ARGON2_TYPE,
         memoryCost: ARGON2_MEMORY_COST,
         timeCost: ARGON2_TIME_COST,
         parallelism: ARGON2_PARALLELISM,
     });
-    usuario.password = passwordHashed;
-    // Creamos el nuevo usuario en la base de datos con la password hasheada
-    const usuarioCreado = await prisma.usuario.create({ data: usuario });
+    return await prisma.$transaction(async (prisma) => {
+        // Validamos que el rut no exista previamente como un Usuario antes de intentar crearlo.
+        const existingUsuario = await prisma.usuario.findUnique({
+            where: { rut: usuario.rut }
+        });
+        if (existingUsuario) throw new AppError('El usuario ya existe', 400);
 
-    const { password: _password, rut: _rut, ...usuarioSeguro } = usuarioCreado;
+        let personaData;
+        // Si viene información de persona, la creamos antes de crear el usuario.
+        if (persona){
+            personaData = {
+                ...persona,
+                fechaNacimiento: new Date(persona.fechaNacimiento)
+            };
+            await prisma.persona.create({ 
+                data: personaData 
+            });
+        }
+        else {
+            // Si no viene información de persona, verificamos que la persona ya exista en la base de datos. (Por integridad)
+            const existingPersona = await prisma.persona.findUnique({
+                where: { rut: usuario.rut }
+            });
+            if (!existingPersona) throw new AppError(`No existe persona en el sistema con el RUT ${usuario.rut}`, 404);
+        }
+        // Creamos el nuevo usuario en la base de datos con la password hasheada
+        const usuarioCreado = await prisma.usuario.create({ 
+            data: {
+                ...usuario,
+                password: passwordHashed
+            }
+        });
 
-    return { usuario: usuarioSeguro, persona: personaData };
+        const { password: _password, rut: _rut, ...usuarioSeguro } = usuarioCreado;
+
+        return { usuario: usuarioSeguro, persona: personaData };
+    });
 }
 
 export async function updateUsuario(rut, usuario, persona){
@@ -139,7 +146,6 @@ export async function updateUsuario(rut, usuario, persona){
 
     // Retornamos el usuario actualizado junto con la persona asociada
     return { usuario: updatedUsuario, datoModificadoUsuario: usuario, persona: updatedPersona, datoModificadoPersona: persona };
-
 }
 
 export async function changeUsuarioStatus(rut, activo){
