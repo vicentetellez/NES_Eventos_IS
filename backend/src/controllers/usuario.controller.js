@@ -23,7 +23,7 @@ export const getAllUsuariosByFilterStatusController = async (req, res, next) => 
 
 export const getUsuarioByRutController = async (req, res, next) => {
     try {
-        const { rut } = req.params;
+        const { rut } = req.validatedParams;
         const result = await getUsuarioByRut(rut);
         response.success(res, 200, `Busqueda de usuario ${rut} exitosa`, result);
     } catch (error) {
@@ -43,7 +43,7 @@ export const createUsuarioController = async (req, res, next) => {
 
 export const updateUsuarioController = async (req, res, next) => {
     try {
-        const { rut } = req.params;
+        const { rut } = req.validatedParams;
         const { usuario, persona } = req.body;
         const result = await updateUsuario(rut, usuario, persona);
         response.success(res, 200, `Usuario ${rut} actualizado exitosamente`, result);
@@ -54,7 +54,7 @@ export const updateUsuarioController = async (req, res, next) => {
 
 export const changeUsuarioStatusController = async (req, res, next) => {
     try {
-        const { rut } = req.params;
+        const { rut } = req.validatedParams;
         const { activo } = req.validatedQuery;
         const result = await changeUsuarioStatus(rut, activo);
         if (activo === true) response.success(res, 200, `Estado del usuario ${rut} actualizado a activo exitosamente`, result);
@@ -77,7 +77,7 @@ export const changeOwnPasswordController = async (req, res, next) => {
 
 export const resetUsuarioPasswordController = async (req, res, next) => {
     try {
-        const { rut } = req.params;
+        const { rut } = req.validatedParams;
         const { newPassword } = req.body;
         const result = await resetUsuarioPassword(rut, newPassword, req.user.rut);
         response.success(res, 200, `Password del usuario ${rut} restablecida exitosamente`, result);
