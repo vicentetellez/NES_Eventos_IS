@@ -15,6 +15,7 @@ import {
 } from '../schemas/banqueteria.schema.js';
 import { 
     getAllBanqueteriasByFilterStatusController,
+    getBanqueteriasPublicasController,
     getBanqueteriaByCodigoController,
     createBanqueteriaController,
     updateBanqueteriaController,
@@ -22,6 +23,8 @@ import {
 } from '../controllers/banqueteria.controller.js';
 
 const router = Router();
+
+router.get('/publicos', getBanqueteriasPublicasController);
 
 router.get('/',
             authenticateJwt,
