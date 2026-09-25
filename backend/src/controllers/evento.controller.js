@@ -3,6 +3,7 @@ import {
     getAllEventosByFilterEstado,
     getEventoByCodigo,
     getEventoByCodigoEvaluacion,
+    solicitudEvento,
     updateEvento,
     deleteEvento,
 } from '../services/evento.service.js';
@@ -32,6 +33,22 @@ export const getEventoByCodigoEvaluacionController = async (req, res, next) => {
         const { codigoEvaluacion } = req.validatedParams;
         const evento = await getEventoByCodigoEvaluacion(codigoEvaluacion);
         response.success(res, 200, `Evento con código ${codigoEvaluacion} obtenido correctamente`, evento);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const solicitudEventoController = async (req, res, next) => {
+    try {
+        const { eventoData, banqueterias } = req.body;
+        const { rutCliente, datosClienteNuevo, datosEventoNuevo } = eventoData;
+        const solicitud = await solicitudEvento(
+            rutCliente,
+            datosClienteNuevo,
+            datosEventoNuevo,
+            banqueterias
+        );
+        response.success(res, 201, 'Solicitud de evento creada correctamente', solicitud);
     } catch (error) {
         next(error);
     }
