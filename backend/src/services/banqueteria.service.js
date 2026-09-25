@@ -76,3 +76,50 @@ export async function changeBanqueteriaStatus(codigo, activo) {
         data: { activo: activo }
     });
 }
+
+export async function validarBanqueteriasActivas(prismaTransaction, listaBanqueterias) {
+    const codigosBanquete = [...new Set(
+        listaBanqueterias.map(({ codigoBanquete }) => Number(codigoBanquete))
+    )];
+    const banqueteriasActivas = await prismaTransaction.banqueteria.findMany({
+        where: {
+            codigo: { in: codigosBanquete },
+            activo: true
+        },
+        select: { codigo: true }
+    });
+
+    if (banqueteriasActivas.length !== codigosBanquete.length) {
+        throw new AppError('Una o más banqueterías no existen o están inactivas', 400);
+    }
+}
+
+export async function crearAsignacionesBanqueteria(prismaTransaction, codigoEvento, listaBanqueterias = []) {
+    if (listaBanqueterias.length === 0) return 0;
+
+    // Validar que el evento existe
+    const existingEvento = await prismaTransaction.evento.findUnique({
+        where: { codigo: codigoEvento }
+    });
+    if (!existingEvento) throw new AppError('Evento no encontrado', 404);
+
+    await validarBanqueteriasActivas(prismaTransaction, listaBanqueterias);
+
+    const resultado = await prismaTransaction.eventoTieneBanqueteria.createMany({
+        data: listaBanqueterias.map(({ codigoBanquete, cantidadRequerida }) => ({
+            codigoEvento,
+            codigoBanquete: Number(codigoBanquete),
+            cantidadRequerida: Number(cantidadRequerida)
+        })),
+        skipDuplicates: true
+    });
+
+    const resultadoDTO = await prismaTransaction.banqueteria.findMany({
+        select: { nombre: true },
+        where: {
+            codigo: { in: listaBanqueterias.map(({ codigoBanquete }) => Number(codigoBanquete)) }
+        }
+    });
+
+    return { cantidadBanquetes: resultado.count, banqueterias: resultadoDTO };
+}
