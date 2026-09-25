@@ -441,7 +441,13 @@ async function seedPersonas(){
                 { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
                 { rut: '55667788-3', nombre: 'Ana', primerApellido: 'Torres', segundoApellido: 'Vega', fechaNacimiento: new Date('1995-04-04'), telefono: '556677889', email: 'ana.torres@example.com', codigoComuna: 181 },
                 { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
-                { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 }            
+                { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 },   
+                { rut: '15167826-2', nombre: 'Jorge', primerApellido: 'Hernández', segundoApellido: 'Cruz', fechaNacimiento: new Date('1991-07-07'), telefono: '889900112', email: 'jorge.hernandez@example.com', codigoComuna: 181 },
+                { rut: '13166479-6', nombre: 'Lucía', primerApellido: 'Vargas', segundoApellido: 'Molina', fechaNacimiento: new Date('1994-08-08'), telefono: '990011223', email: 'lucia.vargas@example.com', codigoComuna: 181 },
+                { rut: '16376527-6', nombre: 'Miguel', primerApellido: 'Castro', segundoApellido: 'Pérez', fechaNacimiento: new Date('1990-09-09'), telefono: '101112131', email: 'miguel.castro@example.com', codigoComuna: 181 },
+                { rut: '20126066-3', nombre: 'Sofía', primerApellido: 'Rivas', segundoApellido: 'Lara', fechaNacimiento: new Date('1992-10-10'), telefono: '121314151', email: 'sofia.rivas@example.com', codigoComuna: 181 },
+                { rut: '13073408-1', nombre: 'Valentina', primerApellido: 'Silva', segundoApellido: 'Morales', fechaNacimiento: new Date('1993-11-11'), telefono: '131415161', email: 'valentina.silva@example.com', codigoComuna: 181 },
+
             ];  
             await prisma.persona.createMany({ data: personas });
             console.log('Personas sembradas correctamente.');
@@ -460,7 +466,12 @@ async function seedClientes(){
         if(countCliente === 0){
             const clientes = [
                 { rut: '12345678-5'},
-                { rut: '98765432-5'}
+                { rut: '98765432-5'},
+                { rut: '15167826-2'},
+                { rut: '13166479-6'},
+                { rut: '16376527-6'},
+                { rut: '20126066-3'},
+                { rut: '13073408-1'},
 
             ];
             await prisma.cliente.createMany({ data: clientes });
@@ -594,6 +605,123 @@ async function seedBanqueteria(){
     }
 }
 
+async function seedEventos(){
+    try {
+        const countEventos = await prisma.evento.count();
+        if(countEventos === 0){
+            const eventos = [
+                {   codigoEvaluacion: 'EV-1A2B3C', 
+                    estado: 'SOLICITADO', 
+                    fechaEvento: new Date('2026-12-24'),
+                    horaInicio: new Date('1970-01-01T10:00:00.000Z'), 
+                    horasEvento: 8, 
+                    cantidadPersonas: 900,
+
+                    codigoTipoEvento: 7,
+                    codigoCentroEvento: 1,
+                    rutCliente: '13073408-1',
+                },
+                {   codigoEvaluacion: 'EV-4D5E6F', 
+                    estado: 'SOLICITADO', 
+                    fechaEvento: new Date('2024-11-20'), 
+                    horaInicio: new Date('1970-01-01T12:00:00.000Z'), 
+                    horasEvento: 7, 
+                    cantidadPersonas: 400, 
+
+                    codigoTipoEvento: 6,
+                    codigoCentroEvento: 4,
+                    rutCliente: '98765432-5',
+                },
+                {   codigoEvaluacion: 'EV-7G8H9I', 
+                    estado: 'PENDIENTE_PAGO_ABONO', 
+                    fechaEvento: new Date('2025-10-15'), 
+                    horaInicio: new Date('1970-01-01T16:00:00.000Z'), 
+                    horasEvento: 6,
+                    horasMontajeDesmontaje: 2,
+                    cantidadPersonas: 200, 
+
+                    fechaPagoAbono: new Date('2025-09-15'),
+                    rutUsuarioPagoAbono: '66778899-4',
+
+                    codigoTipoEvento: 8,
+                    codigoCentroEvento: 5,
+                    rutCliente: '15167826-2',
+                },
+                {   codigoEvaluacion: 'EV-0J1K2L', 
+                    estado: 'ORGANIZANDO', 
+                    fechaEvento: new Date('2026-01-10'), 
+                    horaInicio: new Date('1970-01-01T10:00:00.000Z'), 
+                    horasEvento: 4, 
+                    horasMontajeDesmontaje: 2,
+                    cantidadPersonas: 100, 
+
+                    fechaPagoAbono: new Date('2025-09-15'),
+                    rutUsuarioPagoAbono: '77889900-0',
+
+                    codigoTipoEvento: 7,
+                    codigoCentroEvento: 3,
+                    rutCliente: '13166479-6',
+                },
+                {   codigoEvaluacion: 'EV-3M4N5O', 
+                    estado: 'PENDIENTE_PAGO_FINAL', 
+                    fechaEvento: new Date('2026-02-20'), 
+                    horaInicio: new Date('1970-01-01T15:00:00.000Z'), 
+                    horasEvento: 5, 
+                    horasMontajeDesmontaje: 2,
+                    cantidadPersonas: 250, 
+
+                    fechaPagoAbono: new Date('2025-09-15'),
+                    rutUsuarioPagoAbono: '66778899-4',
+
+                    codigoTipoEvento: 9,
+                    codigoCentroEvento: 6,
+                    rutCliente: '16376527-6',
+                },
+                {   codigoEvaluacion: 'EV-6P7Q8R', 
+                    estado: 'EN_PREPARACION', 
+                    fechaEvento: new Date('2025-09-05'), 
+                    horaInicio: new Date('1970-01-01T13:00:00.000Z'), 
+                    horasMontajeDesmontaje: 2,
+                    horasEvento: 6, 
+                    cantidadPersonas: 300, 
+
+                    fechaPagoAbono: new Date('2025-09-15'),
+                    rutUsuarioPagoAbono: '66778899-4',
+                    fechaPagoFinal: new Date('2025-10-20'),
+                    rutUsuarioPagoFinal: '77889900-0',
+
+                    codigoTipoEvento: 8,
+                    codigoCentroEvento: 5,
+                    rutCliente: '20126066-3',
+                },
+                {   codigoEvaluacion: 'EV-9S0T1U', 
+                    estado: 'FINALIZADO', 
+                    fechaEvento: new Date('2025-12-12'), 
+                    horaInicio: new Date('1970-01-01T12:00:00.000Z'), 
+                    horasMontajeDesmontaje: 3,
+                    horasEvento: 7, 
+                    cantidadPersonas: 500, 
+
+                    fechaPagoAbono: new Date('2025-09-15'),
+                    rutUsuarioPagoAbono: '77889900-0',
+                    fechaPagoFinal: new Date('2025-10-20'),
+                    rutUsuarioPagoFinal: '66778899-4',
+
+                    codigoTipoEvento: 9,
+                    codigoCentroEvento: 6,
+                    rutCliente: '12345678-5',
+                }
+            ];
+            await prisma.evento.createMany({ data: eventos });
+            console.log('Eventos sembrados correctamente.');
+        }
+        else {
+            console.log('Eventos ya existen en la base de datos.');
+        }
+    } catch(error) {
+        console.error('Error al sembrar eventos:', error);
+    }
+}
 
 
 
@@ -610,6 +738,7 @@ async function main(){
     await seedTipoEventos();
     await seedCentroEventos();
     await seedBanqueteria();
+    await seedEventos();
 }
 
 main()
