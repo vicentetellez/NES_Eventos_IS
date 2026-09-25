@@ -1,3 +1,4 @@
+import { constants } from 'node:os';
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js'
 
@@ -11,6 +12,20 @@ export async function getAllBanqueteriasByFilterStatus(filtroActivo) {
     }
 
     return { banqueteria };
+}
+
+export async function getBanqueteriasPublicas() {
+    const banqueterias = await prisma.banqueteria.findMany({
+        where: { activo: true },
+        select: {
+            codigo: true,
+            nombre: true,
+            descripcion: true,
+            precioPersonaReferencial: true
+        }
+    });
+
+    return { banqueterias };
 }
 
 export async function getBanqueteriaByCodigo(codigo) {
