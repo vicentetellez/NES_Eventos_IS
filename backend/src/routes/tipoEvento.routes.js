@@ -15,6 +15,7 @@ import {
 } from '../schemas/tipoEvento.schema.js';
 import { 
     getAllTipoEventosByFilterStatusController,
+    getTiposEventoPublicosController,
     getTipoEventoByCodigoController,
     createTipoEventoController,
     updateTipoEventoController,
@@ -22,6 +23,8 @@ import {
 } from '../controllers/tipoEvento.controller.js';
 
 const router = Router();
+
+router.get('/publicos', getTiposEventoPublicosController);
 
 router.get('/',
             authenticateJwt,
