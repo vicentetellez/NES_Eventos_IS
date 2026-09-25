@@ -124,3 +124,53 @@ export async function deleteEvento(codigo) {
 
     return ({ evento: deletedEvento });
 }
+
+const transicionesPermitidas = {
+    SOLICITADO: ['COTIZANDO', 'CANCELADO'],
+    COTIZANDO: ['PENDIENTE_PAGO_ABONO', 'CANCELADO'],
+    PENDIENTE_PAGO_ABONO: ['ORGANIZANDO', 'CANCELADO'],
+    ORGANIZANDO: ['PENDIENTE_PAGO_FINAL', 'CANCELADO'],
+    PENDIENTE_PAGO_FINAL: ['EN_PREPARACION', 'CANCELADO'],
+    EN_PREPARACION: ['EN_EJECUCION', 'CANCELADO'],
+    EN_EJECUCION: ['FINALIZADO', 'CANCELADO'],
+    FINALIZADO: [],
+    CANCELADO: []
+};
+
+export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario){
+    const evento = await prisma.evento.findUnique({ 
+        where: { codigo: codigoEvento } 
+    });
+
+    if (!evento){
+        throw new AppError(`Evento con código ${codigoEvento} no encontrado`, 404);
+    }
+
+    if (!transicionesPermitidas[evento.estado].includes(estadoDestino)) {
+        throw new AppError(`No se puede cambiar de ${evento.estado} a ${estadoDestino}`, 400);
+    }
+   
+    if (estadoDestino === 'ORGANIZANDO') {
+        evento.estado = estadoDestino;
+        evento.rutUsuarioPagoAbono = rutUsuario;
+        evento.fechaPagoAbono = new Date();
+    }
+    else if (estadoDestino === 'EN_PREPARACION') {
+        evento.estado = estadoDestino;
+        evento.rutUsuarioPagoFinal = rutUsuario;
+        evento.fechaPagoFinal = new Date();
+    }
+    else {
+        evento.estado = estadoDestino;
+    }
+
+    const updatedEvento = await prisma.evento.update({
+        where: { codigo: codigoEvento },
+        data: { estado: estadoDestino,
+                rutUsuarioPagoAbono: evento.rutUsuarioPagoAbono,
+                rutUsuarioPagoFinal: evento.rutUsuarioPagoFinal,
+                fechaPagoAbono: evento.fechaPagoAbono,
+                fechaPagoFinal: evento.fechaPagoFinal }
+    });
+    return updatedEvento;
+};
