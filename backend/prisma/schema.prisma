@@ -237,6 +237,8 @@ model Evento {
   fechaRegistro            DateTime                     @default(now()) @map("fecha_registro") @db.Timestamptz(3)
   
   fechaPagoAbono           DateTime?                    @map("fecha_pago_abono")
+  fechaLimiteAbono          DateTime?                    @map("fecha_limite_abono") @db.Date
+  montoAbono                Int?                         @map("monto_abono")
   rutUsuarioPagoAbono      String?                      @map("rut_usuario_pago_abono") @db.VarChar(12)
   fechaPagoFinal           DateTime?                    @map("fecha_pago_final")
   rutUsuarioPagoFinal      String?                      @map("rut_usuario_pago_final") @db.VarChar(12)
