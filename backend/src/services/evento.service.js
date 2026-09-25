@@ -174,3 +174,45 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
     });
     return updatedEvento;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+// AQUI PA ABAJO VA LA LOGICA DE CREAR UN EVENTO MEDIANTE RUTA PUBLICA
+async function crearEventoTransaccion(prismaTransaction, rutCliente, datosClienteNuevo, datosEventoNuevo) {
+    // Primero vemos lo del cliente
+    // Llamamos a los servicios de cliente para verificar si el cliente ya existe o crear uno nuevo
+    const cliente = await obtenerOrCrearCliente(prismaTransaction, rutCliente, datosClienteNuevo);
+    // Llamamos a la función para crear el evento con los datos del cliente ya verificados o creados
+    const evento = await crearEventoEnTransaccion(prismaTransaction, rutCliente, datosEventoNuevo);
+
+    return evento;
+}
+async function asignarBanqueteriasTransaccion(prismaTransaction, codigoEvento, listaBanqueterias) {
+    // Llamamos a los servicios de banqueteria para asignar los banquetes
+    const banquete = await crearAsignacionesBanqueteria(prismaTransaction, codigoEvento, listaBanqueterias);
+    
+    return banquete;
+}
+
+// funcion publica para la creacion de una solicitud de evento mediante el formulario del cliente
+export async function solicitudEvento(rutCliente, datosClienteNuevo, datosEventoNuevo, listaBanqueterias) {
+    return prisma.$transaction(async (x) => {
+        // Primero vamos a llamar la funcion orquestadora de ver los datos del cliente y del evento
+        const nuevoEvento = await crearEventoTransaccion(x, rutCliente, datosClienteNuevo, datosEventoNuevo);
+
+        // Después llamamos la funcion orquestadora de las banqueterias, para asignarlas al evento
+        const banquetesAsignados = await asignarBanqueteriasTransaccion(x, nuevoEvento.codigo, listaBanqueterias);
+
+        return { nuevoEvento, banquetesAsignados };
+    });
+}
