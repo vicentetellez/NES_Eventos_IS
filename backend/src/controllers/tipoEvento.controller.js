@@ -1,6 +1,7 @@
 import { response } from '../helpers/responses.js';
 import {
     getAllTipoEventosByFilterStatus,
+    getTiposEventoPublicos,
     getTipoEventoByCodigo,
     createTipoEvento,
     updateTipoEvento,
@@ -13,6 +14,15 @@ export const getAllTipoEventosByFilterStatusController = async (req, res, next) 
         const result = await getAllTipoEventosByFilterStatus(activo);
         if (activo === true) response.success(res, 200, "Busqueda de tipos de eventos activos exitosa", result);
         if (activo === false) response.success(res, 200, "Busqueda de tipos de eventos inactivos exitosa", result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getTiposEventoPublicosController = async (req, res, next) => {
+    try {
+        const result = await getTiposEventoPublicos();
+        response.success(res, 200, 'Tipos de evento públicos obtenidos correctamente', result);
     } catch (error) {
         next(error);
     }
