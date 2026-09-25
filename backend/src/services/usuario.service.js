@@ -4,7 +4,6 @@
 import argon2 from 'argon2';
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js'
-import { createPersona } from './persona.service.js'
 import { ARGON2_TYPE, ARGON2_MEMORY_COST, ARGON2_TIME_COST, ARGON2_PARALLELISM } from '../config/configEnv.js';
 
 // Evita dejar el sistema sin ningún ADMIN activo al degradar/desactivar una cuenta.
@@ -73,9 +72,9 @@ export async function createUsuario(usuario, persona){
         timeCost: ARGON2_TIME_COST,
         parallelism: ARGON2_PARALLELISM,
     });
-    return await prisma.$transaction(async (prisma) => {
+    return await prisma.$transaction(async (x) => {
         // Validamos que el rut no exista previamente como un Usuario antes de intentar crearlo.
-        const existingUsuario = await prisma.usuario.findUnique({
+        const existingUsuario = await x.usuario.findUnique({
             where: { rut: usuario.rut }
         });
         if (existingUsuario) throw new AppError('El usuario ya existe', 400);
@@ -87,19 +86,19 @@ export async function createUsuario(usuario, persona){
                 ...persona,
                 fechaNacimiento: new Date(persona.fechaNacimiento)
             };
-            await prisma.persona.create({ 
+            await x.persona.create({ 
                 data: personaData 
             });
         }
         else {
             // Si no viene información de persona, verificamos que la persona ya exista en la base de datos. (Por integridad)
-            const existingPersona = await prisma.persona.findUnique({
+            const existingPersona = await x.persona.findUnique({
                 where: { rut: usuario.rut }
             });
             if (!existingPersona) throw new AppError(`No existe persona en el sistema con el RUT ${usuario.rut}`, 404);
         }
         // Creamos el nuevo usuario en la base de datos con la password hasheada
-        const usuarioCreado = await prisma.usuario.create({ 
+        const usuarioCreado = await x.usuario.create({ 
             data: {
                 ...usuario,
                 password: passwordHashed
