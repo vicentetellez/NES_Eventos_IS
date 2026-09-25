@@ -6,6 +6,7 @@ import {
     solicitudEvento,
     updateEvento,
     deleteEvento,
+    avanzarEstadoEvento
 } from '../services/evento.service.js';
 
 export const getAllEventosByFilterEstadoController = async (req, res, next) => {
@@ -70,6 +71,17 @@ export const deleteEventoController = async (req, res, next) => {
         const { codigo } = req.validatedParams;
         const deletedEvento = await deleteEvento(codigo);
         response.success(res, 200, `Evento con código ${codigo} eliminado correctamente`, deletedEvento);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const avanzarEstadoEventoController = async (req, res, next) => {
+    try {
+        const { codigo } = req.validatedParams;
+        const { estadoDestino } = req.body;
+        const evento = await avanzarEstadoEvento(codigo, estadoDestino, req.user.rut);
+        response.success(res, 200, `Estado del evento con código ${codigo} actualizado correctamente`, { evento });
     } catch (error) {
         next(error);
     }
