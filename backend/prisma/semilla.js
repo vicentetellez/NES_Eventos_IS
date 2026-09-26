@@ -594,6 +594,99 @@ async function seedBanqueteria(){
     }
 }
 
+async function seedCatalogosPresupuesto(){
+    const categorias = [
+        { nombre: 'Audio' },
+        { nombre: 'Iluminacion' },
+        { nombre: 'Escenario' }
+    ];
+
+    const categoriasCreadas = {};
+    for (const categoria of categorias) {
+        categoriasCreadas[categoria.nombre] = await prisma.categoria.upsert({
+            where: { nombre: categoria.nombre },
+            update: {},
+            create: categoria
+        });
+    }
+
+    const equipos = [
+        { nombre: 'Parlante activo', categoria: 'Audio', stockTotal: 20, arriendoHoraReferencial: 12000 },
+        { nombre: 'Consola de sonido', categoria: 'Audio', stockTotal: 4, arriendoHoraReferencial: 25000 },
+        { nombre: 'Pantalla LED', categoria: 'Iluminacion', stockTotal: 3, arriendoHoraReferencial: 90000 }
+    ];
+
+    const equiposCreados = {};
+    for (const equipo of equipos) {
+        equiposCreados[equipo.nombre] = await prisma.equipo.upsert({
+            where: { nombre: equipo.nombre },
+            update: {},
+            create: {
+                nombre: equipo.nombre,
+                esExterno: false,
+                stockTotal: equipo.stockTotal,
+                stockNoDisponible: 0,
+                arriendoHoraReferencial: equipo.arriendoHoraReferencial,
+                codigoCategoria: categoriasCreadas[equipo.categoria].codigo
+            }
+        });
+    }
+
+    const especialidades = [
+        { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000 },
+        { nombre: 'Garzon', tarifaHoraReferencial: 8000 },
+        { nombre: 'Productor general', tarifaHoraReferencial: 22000 }
+    ];
+
+    const especialidadesCreadas = {};
+    for (const especialidad of especialidades) {
+        especialidadesCreadas[especialidad.nombre] = await prisma.especialidad.upsert({
+            where: { nombre: especialidad.nombre },
+            update: {},
+            create: especialidad
+        });
+    }
+
+    const tiposEvento = {};
+    for (const nombre of ['Conciertos', 'Matrimonios', 'Seminarios']) {
+        tiposEvento[nombre] = await prisma.tipoEvento.findUnique({ where: { nombre } });
+    }
+
+    const plantillas = [
+        { tipo: 'Conciertos', equipo: 'Parlante activo', cantidadFija: 4, ratioInvitados: 100 },
+        { tipo: 'Conciertos', especialidad: 'Tecnico de sonido', cantidadFija: 2, ratioInvitados: 200 },
+        { tipo: 'Matrimonios', equipo: 'Parlante activo', cantidadFija: 2, ratioInvitados: 0 },
+        { tipo: 'Matrimonios', especialidad: 'Garzon', cantidadFija: 0, ratioInvitados: 20 },
+        { tipo: 'Seminarios', equipo: 'Pantalla LED', cantidadFija: 1, ratioInvitados: 0 },
+        { tipo: 'Seminarios', especialidad: 'Tecnico de sonido', cantidadFija: 1, ratioInvitados: 250 }
+    ];
+
+    for (const plantilla of plantillas) {
+        const tipoEvento = tiposEvento[plantilla.tipo];
+        if (!tipoEvento) continue;
+
+        const codigoEquipo = plantilla.equipo ? equiposCreados[plantilla.equipo].codigo : null;
+        const codigoEspecialidad = plantilla.especialidad ? especialidadesCreadas[plantilla.especialidad].codigo : null;
+        const existingPlantilla = await prisma.plantilla.findFirst({
+            where: { codigoTipoEvento: tipoEvento.codigo, codigoEquipo, codigoEspecialidad }
+        });
+
+        if (!existingPlantilla) {
+            await prisma.plantilla.create({
+                data: {
+                    codigoTipoEvento: tipoEvento.codigo,
+                    codigoEquipo,
+                    codigoEspecialidad,
+                    cantidadFija: plantilla.cantidadFija,
+                    ratioInvitados: plantilla.ratioInvitados
+                }
+            });
+        }
+    }
+
+    console.log('Catalogos de presupuesto de prueba sembrados (valores demostrativos).');
+}
+
 
 
 
@@ -610,6 +703,7 @@ async function main(){
     await seedTipoEventos();
     await seedCentroEventos();
     await seedBanqueteria();
+    await seedCatalogosPresupuesto();
 }
 
 main()
