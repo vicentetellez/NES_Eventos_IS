@@ -38,6 +38,10 @@
 
 .brand-name { font-size: 14px; font-weight: 700; }
 .brand-name i { margin-left: 4px; color: #bdd0bd; font-family: Georgia, serif; font-size: 12px; font-weight: 400; font-style: normal; }
+.module-nav { height: 74px; margin: 0 auto 0 78px; display: flex; align-items: stretch; gap: 24px; }
+.module-tab { position: relative; padding: 0 3px; border: 0; color: #bfd0c5; background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.module-tab:hover, .module-tab.active { color: #fff; }
+.module-tab.active::after { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; background: #c4d6bb; content: ''; }
 .account-area { gap: 20px; }
 .account-copy { display: grid; gap: 1px; text-align: right; }
 .account-role { font-size: 13px; font-weight: 600; }
@@ -157,6 +161,31 @@
 .footer { min-height: 47px; padding: 0 clamp(36px, 6vw, 96px); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #dce2da; color: #7a867e; font-size: 10px; }
 .footer span:first-child { color: #466453; font-weight: 700; }
 
+.ranking-content { animation-delay: 40ms; }
+.ranking-total { min-width: 175px; padding: 3px 0 3px 22px; display: flex; flex-direction: column; gap: 2px; border-left: 2px solid #b4c6b5; }
+.ranking-total strong { color: #1d4939; font-family: Georgia, serif; font-size: 26px; font-weight: 400; line-height: 1; }
+.ranking-total span { color: #768179; font-size: 10px; }
+.ranking-filters { margin-bottom: 33px; padding: 16px 17px; display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(190px, 1.2fr) minmax(105px, 0.6fr) minmax(90px, 0.55fr) auto; align-items: end; gap: 12px; border-top: 1px solid #d6ded4; border-bottom: 1px solid #d6ded4; background: rgba(255, 255, 255, 0.55); }
+.ranking-filter { min-width: 0; display: grid; gap: 6px; color: #596b60; font-size: 10px; font-weight: 700; }
+.ranking-filter input { width: 100%; height: 37px; min-width: 0; padding: 0 10px; border: 1px solid #cbd4ca; border-radius: 2px; color: #263f34; background: #fff; font: inherit; font-size: 11px; font-weight: 400; }
+.ranking-filter input::placeholder { color: #98a29b; }
+.ranking-filter input:focus { outline: 2px solid #69977c; outline-offset: 1px; }
+.ranking-filter-actions { display: flex; align-items: center; gap: 11px; }
+.ranking-filter-actions .primary-button { white-space: nowrap; }
+.text-button { padding: 8px 2px; border: 0; color: #547263; background: transparent; font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
+.text-button:hover { color: #1b5547; text-decoration: underline; }
+.ranking-results { margin-top: 0; }
+.ranking-table th:first-child, .ranking-table td:first-child { width: 55px; text-align: center; }
+.ranking-table th:nth-child(4), .ranking-table td:nth-child(4) { width: 150px; }
+.ranking-table th:nth-child(5), .ranking-table td:nth-child(5) { width: 85px; }
+.ranking-table th:nth-child(6), .ranking-table td:nth-child(6) { width: 130px; }
+.rank-number { color: #849088; font-family: Georgia, serif; font-size: 14px; }
+.rank-highlight { color: #a87932; font-weight: 700; }
+.specialty-list { max-width: 320px; display: flex; flex-wrap: wrap; gap: 4px; white-space: normal; }
+.specialty-tag { padding: 4px 7px; border: 1px solid #dce5da; border-radius: 2px; color: #476653; background: #f4f7f1; font-size: 9px; }
+.ranking-score { color: #1c6048; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ranking-note { margin-top: 12px; color: #7b867e; font-size: 10px; }
+
 .login-shell, .loading-screen { min-height: 100vh; padding: 32px 20px; display: grid; place-items: center; background-color: #edf2eb; background-image: repeating-linear-gradient(0deg, transparent 0 35px, rgba(41, 78, 57, 0.035) 36px); }
 .login-shell { position: relative; }
 .login-mark { position: absolute; top: 32px; left: clamp(36px, 6vw, 96px); color: #214b3e; font-family: Georgia, serif; font-size: 19px; font-weight: 700; }
@@ -187,4 +216,7 @@ button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid
   .summary-strip { grid-template-columns: repeat(3, 1fr); padding: 14px 0 10px; }
   .summary-update { grid-column: 1 / -1; padding: 13px 4px 0; }
   .alert-table th, .alert-table td { padding-inline: 11px; }
+  .module-nav { margin-left: 20px; gap: 12px; }
+  .ranking-filters { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+  .ranking-filter-actions { grid-column: 1 / -1; }
 }
