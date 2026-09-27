@@ -58,6 +58,7 @@ model Trabajador {
   rut                   String                        @id @db.VarChar(12)
   esExterno             Boolean                       @default(false) @map("es_externo")
   sueldo                Int?                      
+  aniosExperiencia      Int?                          @map("anios_experiencia")
   activo                Boolean                       @default(true)
   fechaRegistro         DateTime                      @default(now()) @map("fecha_registro") @db.Timestamptz(3)
 
