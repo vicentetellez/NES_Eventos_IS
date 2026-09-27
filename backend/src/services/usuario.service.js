@@ -4,7 +4,6 @@
 import argon2 from 'argon2';
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js'
-import { createPersona } from './persona.service.js'
 import { ARGON2_TYPE, ARGON2_MEMORY_COST, ARGON2_TIME_COST, ARGON2_PARALLELISM } from '../config/configEnv.js';
 
 // Evita dejar el sistema sin ningún ADMIN activo al degradar/desactivar una cuenta.
@@ -73,7 +72,7 @@ export async function createUsuario(usuario, persona){
             ...persona,
             fechaNacimiento: new Date(persona.fechaNacimiento)
         };
-        await createPersona(personaData);
+        await prisma.persona.create({ data: personaData });
     }
     // Si no viene información de persona, verificamos que la persona ya exista en la base de datos. (Por integridad)
     const existingPersona = await prisma.persona.findUnique({
