@@ -117,7 +117,6 @@ export function calcularCotizacionInicial({
 
     return {
         moneda: 'CLP',
-        incluyeIva: false,
         horasTotales,
         detalles,
         total,
