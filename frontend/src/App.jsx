@@ -71,6 +71,142 @@ function AccessMessage({ title, children, onLogout }) {
   );
 }
 
+function RankingView() {
+  const [filtros, setFiltros] = useState({
+    nombre: '',
+    especialidad: '',
+    aniosExperienciaMin: '',
+    aniosExperienciaMax: '',
+  });
+  const [filtrosAplicados, setFiltrosAplicados] = useState({});
+  const [trabajadores, setTrabajadores] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const query = new URLSearchParams(
+      Object.entries(filtrosAplicados).filter(([, value]) => value !== '')
+    );
+
+    request(`/trabajador/ranking${query.size ? `?${query}` : ''}`)
+      .then((result) => {
+        if (active) {
+          setTrabajadores(result.trabajadores);
+          setError('');
+        }
+      })
+      .catch((loadError) => {
+        if (active) setError(loadError.message);
+      })
+      .finally(() => {
+        if (active) setCargando(false);
+      });
+
+    return () => { active = false; };
+  }, [filtrosAplicados]);
+
+  function updateFilter(event) {
+    setFiltros({ ...filtros, [event.target.name]: event.target.value });
+  }
+
+  function clearFilters() {
+    const vacios = {
+      nombre: '',
+      especialidad: '',
+      aniosExperienciaMin: '',
+      aniosExperienciaMax: '',
+    };
+    setCargando(true);
+    setFiltros(vacios);
+    setFiltrosAplicados(vacios);
+  }
+
+  return (
+    <main className="main-content ranking-content">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">GESTIÓN DE PERSONAL</p>
+          <h1>Ranking de trabajadores</h1>
+          <p className="page-subtitle">Personal activo ordenado por valoración de clientes</p>
+        </div>
+        <div className="ranking-total">
+          <strong>{trabajadores.length}</strong>
+          <span>trabajadores evaluados</span>
+        </div>
+      </div>
+
+      <form className="ranking-filters" onSubmit={(event) => {
+        event.preventDefault();
+        setCargando(true);
+        setFiltrosAplicados({ ...filtros });
+      }}>
+        <label className="ranking-filter ranking-name-filter">
+          <span>Nombre</span>
+          <input name="nombre" value={filtros.nombre} onChange={updateFilter} placeholder="Nombre o apellido" />
+        </label>
+        <label className="ranking-filter ranking-specialty-filter">
+          <span>Cargo o especialidad</span>
+          <input name="especialidad" value={filtros.especialidad} onChange={updateFilter} placeholder="Ej. banquetería" />
+        </label>
+        <label className="ranking-filter">
+          <span>Experiencia desde</span>
+          <input name="aniosExperienciaMin" type="number" min="0" max="80" value={filtros.aniosExperienciaMin} onChange={updateFilter} placeholder="Años" />
+        </label>
+        <label className="ranking-filter">
+          <span>Hasta</span>
+          <input name="aniosExperienciaMax" type="number" min="0" max="80" value={filtros.aniosExperienciaMax} onChange={updateFilter} placeholder="Años" />
+        </label>
+        <div className="ranking-filter-actions">
+          <button className="primary-button" type="submit">Aplicar filtros</button>
+          <button className="text-button" type="button" onClick={clearFilters}>Limpiar</button>
+        </div>
+      </form>
+
+      <section className="ranking-results" aria-labelledby="ranking-results-title">
+        <div className="section-toolbar">
+          <div>
+            <h2 id="ranking-results-title">Personal evaluado</h2>
+            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} resultados · mejor valoración primero`}</p>
+          </div>
+        </div>
+        {error && <p className="inline-error" role="alert">{error}</p>}
+        {cargando ? (
+          <div className="empty-state"><p>Cargando ranking…</p></div>
+        ) : trabajadores.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-check" aria-hidden="true">—</span>
+            <h3>No hay trabajadores para estos filtros</h3>
+            <p>Se muestran trabajadores activos con evaluaciones y especialidades registradas.</p>
+          </div>
+        ) : (
+          <div className="alert-table-wrap">
+            <table className="alert-table ranking-table">
+              <thead>
+                <tr><th>#</th><th>Trabajador</th><th>Especialidades</th><th>Valoración media</th><th>Reseñas</th><th>Experiencia</th><th>Tipo</th></tr>
+              </thead>
+              <tbody>
+                {trabajadores.map((trabajador, index) => (
+                  <tr key={trabajador.rut}>
+                    <td data-label="Posición"><span className={`rank-number ${index < 3 ? 'rank-highlight' : ''}`}>{String(index + 1).padStart(2, '0')}</span></td>
+                    <td data-label="Trabajador"><span className="event-name">{trabajador.nombre}</span><span className="client-name">{trabajador.rut}</span></td>
+                    <td data-label="Especialidades"><div className="specialty-list">{trabajador.especialidades.map((item) => <span className="specialty-tag" key={item.codigo}>{item.nombre}</span>)}</div></td>
+                    <td data-label="Valoración media"><span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+                    <td data-label="Reseñas">{trabajador.totalEvaluaciones}</td>
+                    <td data-label="Experiencia">{trabajador.aniosExperiencia === null ? 'No informada' : `${trabajador.aniosExperiencia} ${trabajador.aniosExperiencia === 1 ? 'año' : 'años'}`}</td>
+                    <td data-label="Tipo">{trabajador.esExterno ? 'Externo' : 'Interno'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <p className="ranking-note">La valoración considera todas las evaluaciones registradas; el detalle por especialidad queda disponible en la respuesta del catálogo.</p>
+    </main>
+  );
+}
+
 function App() {
   const [user, setUser] = useState(null);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -81,6 +217,7 @@ function App() {
   const [filtro, setFiltro] = useState('TODAS');
   const [error, setError] = useState('');
   const [actualizado, setActualizado] = useState(null);
+  const [vista, setVista] = useState('pagos');
 
   useEffect(() => {
     request('/auth/me')
@@ -90,7 +227,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!user || user.debeCambiarPassword || !['ADMIN', 'STAFF'].includes(user.rol)) return undefined;
+    if (vista !== 'pagos' || !user || user.debeCambiarPassword || !['ADMIN', 'STAFF'].includes(user.rol)) return undefined;
     let active = true;
     const loadAlerts = async () => {
       try {
@@ -110,7 +247,7 @@ function App() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [user, diasAnticipacion]);
+  }, [user, diasAnticipacion, vista]);
 
   async function login(credentials) {
     setLoading(true);
@@ -166,6 +303,10 @@ function App() {
           <span className="brand-stamp">N</span>
           <span className="brand-name">NES <i>EVENTOS</i></span>
         </a>
+        <nav className="module-nav" aria-label="Módulos">
+          <button className={vista === 'pagos' ? 'module-tab active' : 'module-tab'} onClick={() => setVista('pagos')}>Pagos</button>
+          <button className={vista === 'ranking' ? 'module-tab active' : 'module-tab'} onClick={() => setVista('ranking')}>Ranking personal</button>
+        </nav>
         <div className="account-area">
           <div className="account-copy">
             <span className="account-role">{user.rol === 'ADMIN' ? 'Administración' : 'Personal'}</span>
@@ -175,7 +316,7 @@ function App() {
         </div>
       </header>
 
-      <main className="main-content" id="inicio">
+      {vista === 'ranking' ? <RankingView /> : <main className="main-content" id="inicio">
         <div className="page-heading">
           <div>
             <p className="eyebrow">SEGUIMIENTO FINANCIERO</p>
@@ -249,7 +390,7 @@ function App() {
             </div>
           )}
         </section>
-      </main>
+      </main>}
       <footer className="footer"><span>NES EVENTOS</span><span>Gestión interna</span></footer>
     </div>
   );
