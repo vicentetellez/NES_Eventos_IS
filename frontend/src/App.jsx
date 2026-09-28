@@ -83,13 +83,13 @@ function RankingView() {
         </div>
         <div className="ranking-total">
           <strong>{trabajadores.length}</strong>
-          <span>perfiles disponibles</span>
+          <span>resultados reales</span>
         </div>
       </div>
 
       {modoDemostracion && (
         <div className="demo-notice" role="status">
-          Vista temporal con datos reales de esta base. Los perfiles sin reseñas aparecen sin puntaje y no se ordenan como evaluados.
+          Vista temporal de la base local. No se agregan datos de ejemplo; sólo aparecen trabajadores activos con especialidad y reseñas reales.
         </div>
       )}
 
@@ -138,8 +138,8 @@ function RankingView() {
         ) : trabajadores.length === 0 ? (
           <div className="empty-state">
             <span className="empty-check" aria-hidden="true">—</span>
-            <h3>No hay trabajadores para estos filtros</h3>
-            <p>Se muestran trabajadores activos con evaluaciones y especialidades registradas.</p>
+            <h3>{Object.values(filtrosAplicados).some(Boolean) ? 'No hay coincidencias para estos filtros' : 'Aún no hay trabajadores rankeables'}</h3>
+            <p>Se requiere un trabajador activo, con especialidad asignada y al menos una evaluación registrada en la base.</p>
           </div>
         ) : (
           <div className="alert-table-wrap">
@@ -164,7 +164,7 @@ function RankingView() {
           </div>
         )}
       </section>
-      <p className="ranking-note">La valoración considera únicamente evaluaciones registradas; los perfiles sin reseñas no reciben una puntuación.</p>
+      <p className="ranking-note">La vista temporal consulta PostgreSQL directamente y no inserta perfiles, especialidades ni evaluaciones.</p>
     </main>
   );
 }
