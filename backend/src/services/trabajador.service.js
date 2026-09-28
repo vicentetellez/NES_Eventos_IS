@@ -6,12 +6,15 @@ function calcularPromedio(evaluaciones) {
     return Number((total / evaluaciones.length).toFixed(2));
 }
 
-export async function getRankingTrabajadores(filtros = {}) {
+export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
+    const { incluirNoEvaluados = false, incluirRut = true } = opciones;
     const { nombre, especialidad, aniosExperienciaMin, aniosExperienciaMax } = filtros;
     const where = {
         activo: true,
-        evaluaciones: { some: {} },
-        especialidades: { some: {} }
+        ...(!incluirNoEvaluados ? {
+            evaluaciones: { some: {} },
+            especialidades: { some: {} }
+        } : {})
     };
 
     if (nombre) {
@@ -88,7 +91,7 @@ export async function getRankingTrabajadores(filtros = {}) {
 
         const persona = trabajador.persona;
         return {
-            rut: trabajador.rut,
+            ...(incluirRut ? { rut: trabajador.rut } : {}),
             nombre: [persona.nombre, persona.primerApellido, persona.segundoApellido]
                 .filter(Boolean)
                 .join(' '),
@@ -111,13 +114,14 @@ export async function getRankingTrabajadores(filtros = {}) {
     });
 
     ranking.sort((primero, segundo) =>
-        segundo.calificacionPromedio - primero.calificacionPromedio
+        (segundo.calificacionPromedio ?? -1) - (primero.calificacionPromedio ?? -1)
         || segundo.totalEvaluaciones - primero.totalEvaluaciones
         || primero.nombre.localeCompare(segundo.nombre, 'es')
     );
 
     return {
         total: ranking.length,
+        ...(incluirNoEvaluados ? { modoDemostracion: true } : {}),
         filtros: {
             nombre: nombre ?? null,
             especialidad: especialidad ?? null,
