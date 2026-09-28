@@ -83,13 +83,13 @@ function RankingView() {
         </div>
         <div className="ranking-total">
           <strong>{trabajadores.length}</strong>
-          <span>resultados reales</span>
+          <span>{modoDemostracion ? 'perfiles demo' : 'trabajadores evaluados'}</span>
         </div>
       </div>
 
       {modoDemostracion && (
         <div className="demo-notice" role="status">
-          Vista temporal de la base local. No se agregan datos de ejemplo; sólo aparecen trabajadores activos con especialidad y reseñas reales.
+          Modo demostración: las especialidades, calificaciones y años marcados DEMO son ficticios; no representan reseñas reales de clientes.
         </div>
       )}
 
@@ -124,7 +124,7 @@ function RankingView() {
         <div className="section-toolbar">
           <div>
             <h2 id="ranking-results-title">Personal evaluado</h2>
-            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} perfiles${modoDemostracion ? ' · datos reales de la base local' : ' · mejor valoración primero'}`}</p>
+            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} perfiles${modoDemostracion ? ' · ranking de demostración' : ' · mejor valoración primero'}`}</p>
           </div>
         </div>
         {error && <p className="inline-error" role="alert">{error}</p>}
@@ -149,13 +149,13 @@ function RankingView() {
               </thead>
               <tbody>
                 {trabajadores.map((trabajador, index) => (
-                  <tr key={trabajador.rut}>
+                  <tr key={`${trabajador.nombre}-${index}`}>
                     <td data-label="Posición"><span className={`rank-number ${trabajador.calificacionPromedio !== null && index < 3 ? 'rank-highlight' : ''}`}>{trabajador.calificacionPromedio === null ? '—' : String(index + 1).padStart(2, '0')}</span></td>
                     <td data-label="Trabajador"><span className="event-name">{trabajador.nombre}</span>{trabajador.rut && <span className="client-name">{trabajador.rut}</span>}</td>
                     <td data-label="Especialidades"><div className="specialty-list">{trabajador.especialidades.map((item) => <span className="specialty-tag" key={item.codigo}>{item.nombre}</span>)}</div></td>
-                    <td data-label="Valoración media">{trabajador.calificacionPromedio === null ? <span className="unrated-label">Sin reseñas</span> : <span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}</td>
+                    <td data-label="Valoración media">{trabajador.calificacionPromedio === null ? <span className="unrated-label">Sin reseñas</span> : <span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{trabajador.tieneEvaluacionDemo && <span className="demo-chip">DEMO</span>}</span>}</td>
                     <td data-label="Reseñas">{trabajador.totalEvaluaciones}</td>
-                    <td data-label="Experiencia">{trabajador.aniosExperiencia === null ? 'No informada' : `${trabajador.aniosExperiencia} ${trabajador.aniosExperiencia === 1 ? 'año' : 'años'}`}</td>
+                    <td data-label="Experiencia">{trabajador.aniosExperiencia === null ? 'No informada' : <>{trabajador.aniosExperiencia} {trabajador.aniosExperiencia === 1 ? 'año' : 'años'}{trabajador.tieneExperienciaDemo && <span className="demo-chip">DEMO</span>}</>}</td>
                     <td data-label="Tipo">{trabajador.esExterno ? 'Externo' : 'Interno'}</td>
                   </tr>
                 ))}
@@ -164,7 +164,7 @@ function RankingView() {
           </div>
         )}
       </section>
-      <p className="ranking-note">La vista temporal consulta PostgreSQL directamente y no inserta perfiles, especialidades ni evaluaciones.</p>
+      <p className="ranking-note">Las evaluaciones y especialidades DEMO son ficticias, se guardaron sólo para esta presentación y deben retirarse antes de usar la base en producción.</p>
     </main>
   );
 }
