@@ -9,3 +9,15 @@ export const getRankingTrabajadoresController = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getRankingTrabajadoresDemoController = async (req, res, next) => {
+    try {
+        const resultado = await getRankingTrabajadores(req.validatedQuery, {
+            incluirNoEvaluados: true,
+            incluirRut: false
+        });
+        response.success(res, 200, 'Vista previa local del personal obtenida correctamente', resultado);
+    } catch (error) {
+        next(error);
+    }
+};
