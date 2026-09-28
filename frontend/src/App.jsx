@@ -28,6 +28,7 @@ function RankingView() {
   const [trabajadores, setTrabajadores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [modoDemostracion, setModoDemostracion] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -35,15 +36,19 @@ function RankingView() {
       Object.entries(filtrosAplicados).filter(([, value]) => value !== '')
     );
 
-    request(`/trabajador/ranking${query.size ? `?${query}` : ''}`)
+    request(`/trabajador/ranking/demo${query.size ? `?${query}` : ''}`)
       .then((result) => {
         if (active) {
           setTrabajadores(result.trabajadores);
+          setModoDemostracion(result.modoDemostracion === true);
           setError('');
         }
       })
       .catch((loadError) => {
-        if (active) setError(loadError.message);
+        if (active) {
+          setTrabajadores([]);
+          setError(loadError.message);
+        }
       })
       .finally(() => {
         if (active) setCargando(false);
@@ -74,13 +79,19 @@ function RankingView() {
         <div>
           <p className="eyebrow">GESTIÓN DE PERSONAL</p>
           <h1>Ranking de trabajadores</h1>
-          <p className="page-subtitle">Personal activo ordenado por valoración de clientes</p>
+          <p className="page-subtitle">Personal activo y evaluaciones registradas en la base local</p>
         </div>
         <div className="ranking-total">
           <strong>{trabajadores.length}</strong>
-          <span>trabajadores evaluados</span>
+          <span>perfiles disponibles</span>
         </div>
       </div>
+
+      {modoDemostracion && (
+        <div className="demo-notice" role="status">
+          Vista temporal con datos reales de esta base. Los perfiles sin reseñas aparecen sin puntaje y no se ordenan como evaluados.
+        </div>
+      )}
 
       <form className="ranking-filters" onSubmit={(event) => {
         event.preventDefault();
@@ -113,7 +124,7 @@ function RankingView() {
         <div className="section-toolbar">
           <div>
             <h2 id="ranking-results-title">Personal evaluado</h2>
-            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} resultados · mejor valoración primero`}</p>
+            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} perfiles${modoDemostracion ? ' · datos reales de la base local' : ' · mejor valoración primero'}`}</p>
           </div>
         </div>
         {error && <p className="inline-error" role="alert">{error}</p>}
@@ -121,8 +132,8 @@ function RankingView() {
           <div className="empty-state"><p>Cargando ranking…</p></div>
         ) : error ? (
           <div className="empty-state">
-            <h3>No se pudo cargar el ranking</h3>
-            <p>La consulta requiere una sesión autorizada del personal.</p>
+            <h3>No se pudo cargar la vista temporal</h3>
+            <p>Verifica que el backend esté activo y que RANKING_DEMO_PUBLIC=true esté habilitado en desarrollo.</p>
           </div>
         ) : trabajadores.length === 0 ? (
           <div className="empty-state">
@@ -139,10 +150,10 @@ function RankingView() {
               <tbody>
                 {trabajadores.map((trabajador, index) => (
                   <tr key={trabajador.rut}>
-                    <td data-label="Posición"><span className={`rank-number ${index < 3 ? 'rank-highlight' : ''}`}>{String(index + 1).padStart(2, '0')}</span></td>
-                    <td data-label="Trabajador"><span className="event-name">{trabajador.nombre}</span><span className="client-name">{trabajador.rut}</span></td>
+                    <td data-label="Posición"><span className={`rank-number ${trabajador.calificacionPromedio !== null && index < 3 ? 'rank-highlight' : ''}`}>{trabajador.calificacionPromedio === null ? '—' : String(index + 1).padStart(2, '0')}</span></td>
+                    <td data-label="Trabajador"><span className="event-name">{trabajador.nombre}</span>{trabajador.rut && <span className="client-name">{trabajador.rut}</span>}</td>
                     <td data-label="Especialidades"><div className="specialty-list">{trabajador.especialidades.map((item) => <span className="specialty-tag" key={item.codigo}>{item.nombre}</span>)}</div></td>
-                    <td data-label="Valoración media"><span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+                    <td data-label="Valoración media">{trabajador.calificacionPromedio === null ? <span className="unrated-label">Sin reseñas</span> : <span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}</td>
                     <td data-label="Reseñas">{trabajador.totalEvaluaciones}</td>
                     <td data-label="Experiencia">{trabajador.aniosExperiencia === null ? 'No informada' : `${trabajador.aniosExperiencia} ${trabajador.aniosExperiencia === 1 ? 'año' : 'años'}`}</td>
                     <td data-label="Tipo">{trabajador.esExterno ? 'Externo' : 'Interno'}</td>
@@ -153,7 +164,7 @@ function RankingView() {
           </div>
         )}
       </section>
-      <p className="ranking-note">La valoración considera todas las evaluaciones registradas; el detalle por especialidad queda disponible en la respuesta del catálogo.</p>
+      <p className="ranking-note">La valoración considera únicamente evaluaciones registradas; los perfiles sin reseñas no reciben una puntuación.</p>
     </main>
   );
 }
