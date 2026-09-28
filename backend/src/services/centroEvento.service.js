@@ -13,6 +13,20 @@ export async function getAllCentroEventosByFilterStatus(filtroActivo) {
     return { centroEventos };
 }
 
+export async function getCentrosEventoPublicos() {
+    const centroEventos = await prisma.centroEvento.findMany({
+        where: { activo: true },
+        select: {
+            codigo: true,
+            nombre: true,
+            capacidadPersonas: true,
+            direccionExacta: true
+        }
+    });
+
+    return { centroEventos };
+}
+
 export async function getCentroEventoByCodigo(codigo) {
     const centroEvento = await prisma.centroEvento.findUnique({
         where: { codigo }

@@ -15,6 +15,7 @@ import {
 } from '../schemas/centroEvento.schema.js';
 import { 
     getAllCentroEventosByFilterStatusController,
+    getCentrosEventoPublicosController,
     getCentroEventoByCodigoController,
     createCentroEventoController,
     updateCentroEventoController,
@@ -22,6 +23,8 @@ import {
 } from '../controllers/centroEvento.controller.js';
 
 const router = Router();
+
+router.get('/publicos', getCentrosEventoPublicosController);
 
 router.get('/',
             authenticateJwt,

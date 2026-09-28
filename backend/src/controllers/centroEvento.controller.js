@@ -1,6 +1,7 @@
 import { response } from '../helpers/responses.js';
 import {
     getAllCentroEventosByFilterStatus,
+    getCentrosEventoPublicos,
     getCentroEventoByCodigo,
     createCentroEvento,
     updateCentroEvento,
@@ -13,6 +14,15 @@ export const getAllCentroEventosByFilterStatusController = async (req, res, next
         const result = await getAllCentroEventosByFilterStatus(activo);
         if (activo === true) response.success(res, 200, "Busqueda de centros de eventos activos exitosa", result);
         if (activo === false) response.success(res, 200, "Busqueda de centros de eventos inactivos exitosa", result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCentrosEventoPublicosController = async (req, res, next) => {
+    try {
+        const result = await getCentrosEventoPublicos();
+        response.success(res, 200, 'Centros de evento públicos obtenidos correctamente', result);
     } catch (error) {
         next(error);
     }
