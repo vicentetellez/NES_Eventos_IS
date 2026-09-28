@@ -13,8 +13,8 @@ export const getRankingTrabajadoresController = async (req, res, next) => {
 export const getRankingTrabajadoresDemoController = async (req, res, next) => {
     try {
         const resultado = await getRankingTrabajadores(req.validatedQuery, {
-            incluirNoEvaluados: true,
-            incluirRut: false
+            incluirRut: false,
+            modoDemostracion: true
         });
         response.success(res, 200, 'Vista previa local del personal obtenida correctamente', resultado);
     } catch (error) {
