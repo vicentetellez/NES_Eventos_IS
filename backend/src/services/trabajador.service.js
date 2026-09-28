@@ -7,14 +7,12 @@ function calcularPromedio(evaluaciones) {
 }
 
 export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
-    const { incluirNoEvaluados = false, incluirRut = true } = opciones;
+    const { incluirRut = true, modoDemostracion = false } = opciones;
     const { nombre, especialidad, aniosExperienciaMin, aniosExperienciaMax } = filtros;
     const where = {
         activo: true,
-        ...(!incluirNoEvaluados ? {
-            evaluaciones: { some: {} },
-            especialidades: { some: {} }
-        } : {})
+        evaluaciones: { some: {} },
+        especialidades: { some: {} }
     };
 
     if (nombre) {
@@ -121,7 +119,7 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
 
     return {
         total: ranking.length,
-        ...(incluirNoEvaluados ? { modoDemostracion: true } : {}),
+        ...(modoDemostracion ? { modoDemostracion: true } : {}),
         filtros: {
             nombre: nombre ?? null,
             especialidad: especialidad ?? null,
