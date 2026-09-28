@@ -162,6 +162,7 @@
 .footer span:first-child { color: #466453; font-weight: 700; }
 
 .ranking-content { animation-delay: 40ms; }
+.demo-notice { margin: -12px 0 24px; padding: 11px 14px; border-left: 3px solid #98713a; color: #69522c; background: #f8f1e2; font-size: 11px; }
 .ranking-total { min-width: 175px; padding: 3px 0 3px 22px; display: flex; flex-direction: column; gap: 2px; border-left: 2px solid #b4c6b5; }
 .ranking-total strong { color: #1d4939; font-family: Georgia, serif; font-size: 26px; font-weight: 400; line-height: 1; }
 .ranking-total span { color: #768179; font-size: 10px; }
@@ -184,6 +185,7 @@
 .specialty-list { max-width: 320px; display: flex; flex-wrap: wrap; gap: 4px; white-space: normal; }
 .specialty-tag { padding: 4px 7px; border: 1px solid #dce5da; border-radius: 2px; color: #476653; background: #f4f7f1; font-size: 9px; }
 .ranking-score { color: #1c6048; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.unrated-label { color: #7b817b; font-size: 11px; font-style: italic; }
 .ranking-note { margin-top: 12px; color: #7b867e; font-size: 10px; }
 
 .login-shell, .loading-screen { min-height: 100vh; padding: 32px 20px; display: grid; place-items: center; background-color: #edf2eb; background-image: repeating-linear-gradient(0deg, transparent 0 35px, rgba(41, 78, 57, 0.035) 36px); }
