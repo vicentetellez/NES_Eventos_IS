@@ -228,8 +228,8 @@ model Plantilla {
 
 model Evento {
   codigo                   Int                          @id @default(autoincrement()) @map("codigo")
-  codigoEvaluacion         Int                          @map("codigo_evaluacion")
-  estado                   String                       @db.VarChar(50)
+  codigoEvaluacion         String                       @unique @map("codigo_evaluacion") @db.VarChar(20)
+  estado                   String                       @default("SOLICITADO") @db.VarChar(50) 
   fechaEvento              DateTime                     @map("fecha_evento") @db.Date
   horaInicio               DateTime                     @map("hora_inicio") @db.Time
   horasEvento              Int                          @map("horas_evento")
@@ -276,7 +276,7 @@ model EventoUtilizaEquipo {
   cantidadUsada Int     @map("cantidad_usada")
 
   equipo        Equipo  @relation(fields: [codigoEquipo], references: [codigo])
-  evento        Evento  @relation(fields: [codigoEvento], references: [codigo])
+  evento        Evento  @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
 
   @@id([codigoEquipo, codigoEvento])
   @@map("evento_utiliza_equipo")
@@ -287,7 +287,7 @@ model EventoTieneBanqueteria {
   codigoBanquete    Int         @map("codigo_banquete")
   cantidadRequerida Int         @map("cantidad_requerida")
 
-  evento            Evento      @relation(fields: [codigoEvento], references: [codigo])
+  evento            Evento      @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
   banqueteria       Banqueteria @relation(fields: [codigoBanquete], references: [codigo])
 
   @@id([codigoEvento, codigoBanquete])
@@ -303,7 +303,7 @@ model TrabajadorParticipaEvento {
 
   trabajador         Trabajador   @relation(fields: [rutTrabajador], references: [rut])
   especialidad       Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
-  evento             Evento       @relation(fields: [codigoEvento], references: [codigo])
+  evento             Evento       @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
 
   @@id([rutTrabajador, codigoEspecialidad, codigoEvento])
   @@map("trabajador_participa_evento")
@@ -320,7 +320,7 @@ model Presupuesto {
   codigoEvento                     Int                  @map("codigo_evento")
 
   usuarioDictamen                  Usuario?             @relation(fields: [rutUsuarioDictamen], references: [rut])
-  evento                           Evento               @relation(fields: [codigoEvento], references: [codigo])
+  evento                           Evento               @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
   detalles                         DetallePresupuesto[]
 
   @@map("presupuesto")
@@ -335,7 +335,7 @@ model DetallePresupuesto {
   subtotal          Int   
   codigoPresupuesto Int         @map("codigo_presupuesto")
 
-  presupuesto       Presupuesto @relation(fields: [codigoPresupuesto], references: [codigo])
+  presupuesto       Presupuesto @relation(fields: [codigoPresupuesto], references: [codigo], onDelete: Cascade)
 
   @@map("detalle_presupuesto")
 }
@@ -353,7 +353,7 @@ model EvaluacionEvento {
   fechaRegistro        DateTime @default(now()) @map("fecha_registro") @db.Timestamptz(3)
   codigoEvento         Int      @unique @map("codigo_evento")
 
-  evento               Evento   @relation(fields: [codigoEvento], references: [codigo])
+  evento               Evento   @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
 
   @@map("evaluacion_evento")
 }
@@ -368,7 +368,7 @@ model EvaluacionTrabajador {
   codigoEspecialidad   Int          @map("codigo_especialidad")
   rutTrabajador        String       @map("rut_trabajador") @db.VarChar(12)
 
-  evento               Evento       @relation(fields: [codigoEvento], references: [codigo])
+  evento               Evento       @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
   especialidad         Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
   trabajador           Trabajador   @relation(fields: [rutTrabajador], references: [rut])
 

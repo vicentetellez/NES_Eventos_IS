@@ -13,6 +13,19 @@ export async function getAllTipoEventosByFilterStatus(filtroActivo) {
     return { tipoEventos };
 }
 
+export async function getTiposEventoPublicos() {
+    const tipoEventos = await prisma.tipoEvento.findMany({
+        where: { activo: true },
+        select: {
+            codigo: true,
+            nombre: true,
+            descripcion: true
+        }
+    });
+
+    return { tipoEventos };
+}
+
 export async function getTipoEventoByCodigo(codigo) {
     const tipoEvento = await prisma.tipoEvento.findUnique({
         where: { codigo }

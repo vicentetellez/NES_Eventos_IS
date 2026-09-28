@@ -1,6 +1,7 @@
 import { response } from '../helpers/responses.js';
 import {
     getAllBanqueteriasByFilterStatus,
+    getBanqueteriasPublicas,
     getBanqueteriaByCodigo,
     createBanqueteria,
     updateBanqueteria,
@@ -13,6 +14,15 @@ export const getAllBanqueteriasByFilterStatusController = async (req, res, next)
         const result = await getAllBanqueteriasByFilterStatus(activo);
         if (activo === true) response.success(res, 200, "Busqueda de banqueterias activas exitosa", result);
         if (activo === false) response.success(res, 200, "Busqueda de banqueterias inactivas exitosa", result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getBanqueteriasPublicasController = async (req, res, next) => {
+    try {
+        const result = await getBanqueteriasPublicas();
+        response.success(res, 200, 'Banqueterías públicas obtenidas correctamente', result);
     } catch (error) {
         next(error);
     }
