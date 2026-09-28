@@ -67,6 +67,7 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
             evaluaciones: {
                 select: {
                     calificacion: true,
+                    comentarioEspecifico: true,
                     codigoEspecialidad: true,
                     especialidad: { select: { codigo: true, nombre: true } }
                 }
@@ -98,10 +99,15 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
             activo: true,
             calificacionPromedio: calcularPromedio(trabajador.evaluaciones),
             totalEvaluaciones: trabajador.evaluaciones.length,
+            tieneEvaluacionDemo: trabajador.evaluaciones.some(({ comentarioEspecifico }) =>
+                comentarioEspecifico?.startsWith('[DEMO FICTICIA]')
+            ),
             especialidades: trabajador.especialidades.map(({ especialidad: item }) => ({
                 codigo: item.codigo,
                 nombre: item.nombre
             })),
+            tieneExperienciaDemo: trabajador.aniosExperiencia !== null
+                && trabajador.especialidades.some(({ especialidad: item }) => item.nombre.startsWith('DEMO -')),
             evaluacionesPorEspecialidad: [...evaluacionesPorEspecialidad.values()].map((grupo) => ({
                 codigoEspecialidad: grupo.codigoEspecialidad,
                 nombre: grupo.nombre,
