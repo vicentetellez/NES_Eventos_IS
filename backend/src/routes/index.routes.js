@@ -5,6 +5,7 @@ import tipoEventoRoutes from './tipoEvento.routes.js';
 import centroEventoRoutes from './centroEvento.routes.js';
 import banqueteriaRoutes from './banqueteria.routes.js';
 import eventoRoutes from './evento.routes.js';
+import calendarioEventoRoutes from './calendarioEvento.routes.js';
 import clienteRoutes from './cliente.routes.js';
 import presupuestoRoutes from './presupuesto.routes.js';
 
@@ -16,8 +17,8 @@ router.use('/tipo-evento', tipoEventoRoutes);
 router.use('/centro-evento', centroEventoRoutes);
 router.use('/banqueteria', banqueteriaRoutes);
 router.use('/evento', eventoRoutes);
+router.use('/calendario-evento', calendarioEventoRoutes);
 router.use('/cliente', clienteRoutes);
-
 router.use('/presupuestos', presupuestoRoutes);
 
 export default router;
