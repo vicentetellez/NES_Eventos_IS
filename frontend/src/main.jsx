@@ -6,6 +6,7 @@ import './styles/style.css'
 
 import App from './pages/App.jsx'
 import FormularioSolicitud from './pages/formularioSolicitud.jsx'
+import CalendarioEvento from './pages/calendarioEvento.jsx'
 
 const router = createBrowserRouter([
   {
@@ -15,7 +16,10 @@ const router = createBrowserRouter([
   {
     path: '/formulario-solicitud',
     element: <FormularioSolicitud />,
-    
+  },
+  {
+    path: '/calendario-evento',
+    element: <CalendarioEvento />,
   }
 ])
 
