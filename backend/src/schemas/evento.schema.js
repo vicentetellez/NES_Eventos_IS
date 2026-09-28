@@ -59,7 +59,7 @@ export const createEventoSchema = z.object({
 
         rutCliente: rutSchema,
 
-        datosClienteNuevo: datosClienteNuevoSchema,
+        datosClienteNuevo: datosClienteNuevoSchema.optional(),
 
         datosEventoNuevo: z.object({
             fechaEvento: z

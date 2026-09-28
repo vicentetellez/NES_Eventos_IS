@@ -5,6 +5,7 @@ import tipoEventoRoutes from './tipoEvento.routes.js';
 import centroEventoRoutes from './centroEvento.routes.js';
 import banqueteriaRoutes from './banqueteria.routes.js';
 import eventoRoutes from './evento.routes.js';
+import clienteRoutes from './cliente.routes.js';
 
 const router = Router();
 
@@ -14,5 +15,7 @@ router.use('/tipo-evento', tipoEventoRoutes);
 router.use('/centro-evento', centroEventoRoutes);
 router.use('/banqueteria', banqueteriaRoutes);
 router.use('/evento', eventoRoutes);
+router.use('/cliente', clienteRoutes);
+
 
 export default router;
