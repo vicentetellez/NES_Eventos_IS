@@ -1,7 +1,7 @@
 :root {
   font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
-  color: #33483d;
-  background: #f1f4ef;
+  color: #393939;
+  background: #fff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -14,14 +14,13 @@
 * { box-sizing: border-box; }
 
 body {
-  min-width: 760px;
+  min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background-color: #f1f4ef;
-  background-image: repeating-linear-gradient(90deg, transparent 0 71px, rgba(54, 86, 61, 0.025) 72px);
+  background: #fff;
 }
 
 button, input, select { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 #root { min-height: 100vh; }
-::selection { color: #fff; background: #27614d; }
+::selection { color: #fff; background: #53514d; }
