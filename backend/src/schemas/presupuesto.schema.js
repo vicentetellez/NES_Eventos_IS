@@ -17,8 +17,7 @@ const detalleAdicionalSchema = z.object({
 export const calcularCotizacionInicialSchema = z.object({
     codigoTipoEvento: z.number().int().positive(),
     horasEvento: z.number().int().positive(),
-    horasMontaje: z.number().int().nonnegative().default(0),
-    horasDesmontaje: z.number().int().nonnegative().default(0),
+    horasMontajeDesmontaje: z.number().int().nonnegative().nullish().transform((horas) => horas ?? 0),
     cantidadPersonas: z.number().int().positive(),
     detallesAdicionales: z.array(detalleAdicionalSchema).default([])
 }).strict();

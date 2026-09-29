@@ -44,15 +44,13 @@ function crearDetalle({ categoria, descripcion, cantidad, precioUnitario }) {
 export function calcularCotizacionInicial({
     tipoEvento,
     horasEvento,
-    horasMontaje = 0,
-    horasDesmontaje = 0,
+    horasMontajeDesmontaje = 0,
     cantidadPersonas,
     plantillas = [],
     detallesAdicionales = []
 }) {
     validarEnteroNoNegativo(horasEvento, 'horasEvento');
-    validarEnteroNoNegativo(horasMontaje, 'horasMontaje');
-    validarEnteroNoNegativo(horasDesmontaje, 'horasDesmontaje');
+    validarEnteroNoNegativo(horasMontajeDesmontaje, 'horasMontajeDesmontaje');
     validarEnteroNoNegativo(cantidadPersonas, 'cantidadPersonas');
     validarEnteroNoNegativo(tipoEvento?.tarifaHoraBaseReferencial, 'tarifaHoraBaseReferencial');
 
@@ -62,7 +60,7 @@ export function calcularCotizacionInicial({
         throw new TypeError('plantillas y detallesAdicionales deben ser listas');
     }
 
-    const horasTotales = horasEvento + horasMontaje + horasDesmontaje;
+    const horasTotales = horasEvento + horasMontajeDesmontaje;
     validarEnteroNoNegativo(horasTotales, 'horasTotales');
 
     const detalles = [crearDetalle({
