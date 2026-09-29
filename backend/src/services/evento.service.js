@@ -35,16 +35,83 @@ export async function getAllEventosByFilterEstado(estado) {
 
 export async function getEventoByCodigo(codigo) {
     const evento = await prisma.evento.findUnique({
-        where: {
-            codigo: codigo
-        },
+        where: { codigo },
         select: {
+            codigo: true,
+            codigoEvaluacion: true,
+            estado: true,
+            fechaEvento: true,
+            horaInicio: true,
+            horasEvento: true,
+            horasMontajeDesmontaje: true,
+            cantidadPersonas: true,
+            fechaRegistro: true,
+            tipoEventoCliente: true,
+            centroEventoCliente: true,
+            restriccionesAlimentarias: true,
+            comentariosAlcohol: true,
+            comentariosAdicionales: true,
+            codigoTipoEvento: true,
+            codigoCentroEvento: true,
+            rutCliente: true,
             cliente: {
                 select: {
+                    activo: true,
                     persona: {
                         select: {
                             rut: true,
                             nombre: true,
+                            primerApellido: true,
+                            segundoApellido: true,
+                            telefono: true,
+                            email: true,
+                        }
+                    }
+                }
+            },
+            tipoEvento: {
+                select: {
+                    codigo: true,
+                    nombre: true,
+                    tarifaHoraBaseReferencial: true,
+                    plantillas: {
+                        select: {
+                            cantidadFija: true,
+                            ratioInvitados: true,
+                            equipo: {
+                                select: {
+                                    codigo: true,
+                                    nombre: true,
+                                    arriendoHoraReferencial: true,
+                                }
+                            },
+                            especialidad: {
+                                select: {
+                                    codigo: true,
+                                    nombre: true,
+                                    tarifaHoraReferencial: true,
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            centroEvento: {
+                select: {
+                    codigo: true,
+                    nombre: true,
+                    direccionExacta: true,
+                    capacidadPersonas: true,
+                }
+            },
+            banqueterias: {
+                select: {
+                    cantidadRequerida: true,
+                    banqueteria: {
+                        select: {
+                            codigo: true,
+                            nombre: true,
+                            precioPersonaReferencial: true,
                         }
                     }
                 }
