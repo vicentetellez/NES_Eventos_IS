@@ -12,7 +12,8 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",
     "prisma:studio": "npx prisma studio",
-    "prisma:seed": "node prisma/semilla.js"
+    "prisma:seed": "node prisma/semilla.js",
+    "demo:ranking": "node prisma/ranking-demo.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

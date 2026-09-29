@@ -6,6 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
     // Carga las variables de entorno según el entorno actual
     const env = loadEnv(mode, process.cwd(), '')
+    const apiBaseUrl = env.VITE_BASE_URL || '/api'
+    const apiTarget = env.VITE_API_TARGET || 'http://localhost:3000'
 
     return {
         plugins: [
@@ -14,8 +16,8 @@ export default defineConfig(({ mode }) => {
         ],
         server: {
             proxy: {
-                [env.VITE_BASE_URL]: {
-                    target: env.VITE_API_TARGET,
+                [apiBaseUrl]: {
+                    target: apiTarget,
                     changeOrigin: true,
                     secure: false,
                 },

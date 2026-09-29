@@ -1,122 +1,189 @@
-import { useState } from 'react'
-import heroImg from '../assets/hero.png'
-import reactLogo from '../assets/react.svg'
-import viteLogo from '../assets/vite.svg'
+import { useEffect, useState } from 'react';
 import '../styles/App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL || '/api';
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+async function request(path, options = {}) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...options.headers,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || payload.error || 'No fue posible completar la solicitud.');
+  return payload.data;
 }
 
-export default App
+function RankingView() {
+  const [filtros, setFiltros] = useState({
+    nombre: '',
+    especialidad: '',
+    aniosExperienciaMin: '',
+    aniosExperienciaMax: '',
+  });
+  const [filtrosAplicados, setFiltrosAplicados] = useState({});
+  const [trabajadores, setTrabajadores] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+  const [modoDemostracion, setModoDemostracion] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const query = new URLSearchParams(
+      Object.entries(filtrosAplicados).filter(([, value]) => value !== '')
+    );
+
+    request(`/trabajador/ranking/demo${query.size ? `?${query}` : ''}`)
+      .then((result) => {
+        if (active) {
+          setTrabajadores(result.trabajadores);
+          setModoDemostracion(result.modoDemostracion === true);
+          setError('');
+        }
+      })
+      .catch((loadError) => {
+        if (active) {
+          setTrabajadores([]);
+          setError(loadError.message);
+        }
+      })
+      .finally(() => {
+        if (active) setCargando(false);
+      });
+
+    return () => { active = false; };
+  }, [filtrosAplicados]);
+
+  function updateFilter(event) {
+    setFiltros({ ...filtros, [event.target.name]: event.target.value });
+  }
+
+  function clearFilters() {
+    const vacios = {
+      nombre: '',
+      especialidad: '',
+      aniosExperienciaMin: '',
+      aniosExperienciaMax: '',
+    };
+    setCargando(true);
+    setFiltros(vacios);
+    setFiltrosAplicados(vacios);
+  }
+
+  return (
+    <main className="main-content ranking-content">
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">GESTIÓN DE PERSONAL</p>
+          <h1>Ranking de trabajadores</h1>
+          <p className="page-subtitle">Personal activo y evaluaciones registradas en la base local</p>
+        </div>
+        <div className="ranking-total">
+          <strong>{trabajadores.length}</strong>
+          <span>{modoDemostracion ? 'perfiles demo' : 'trabajadores evaluados'}</span>
+        </div>
+      </div>
+
+      {modoDemostracion && (
+        <div className="demo-notice" role="status">
+          Modo demostración: las especialidades, calificaciones y años marcados DEMO son ficticios; no representan reseñas reales de clientes.
+        </div>
+      )}
+
+      <form className="ranking-filters" onSubmit={(event) => {
+        event.preventDefault();
+        setCargando(true);
+        setFiltrosAplicados({ ...filtros });
+      }}>
+        <label className="ranking-filter ranking-name-filter">
+          <span>Nombre</span>
+          <input name="nombre" value={filtros.nombre} onChange={updateFilter} placeholder="Nombre o apellido" />
+        </label>
+        <label className="ranking-filter ranking-specialty-filter">
+          <span>Cargo o especialidad</span>
+          <input name="especialidad" value={filtros.especialidad} onChange={updateFilter} placeholder="Ej. banquetería" />
+        </label>
+        <label className="ranking-filter">
+          <span>Experiencia desde</span>
+          <input name="aniosExperienciaMin" type="number" min="0" max="80" value={filtros.aniosExperienciaMin} onChange={updateFilter} placeholder="Años" />
+        </label>
+        <label className="ranking-filter">
+          <span>Hasta</span>
+          <input name="aniosExperienciaMax" type="number" min="0" max="80" value={filtros.aniosExperienciaMax} onChange={updateFilter} placeholder="Años" />
+        </label>
+        <div className="ranking-filter-actions">
+          <button className="primary-button" type="submit">Aplicar filtros</button>
+          <button className="text-button" type="button" onClick={clearFilters}>Limpiar</button>
+        </div>
+      </form>
+
+      <section className="ranking-results" aria-labelledby="ranking-results-title">
+        <div className="section-toolbar">
+          <div>
+            <h2 id="ranking-results-title">Personal evaluado</h2>
+            <p>{cargando ? 'Actualizando resultados…' : `${trabajadores.length} perfiles${modoDemostracion ? ' · ranking de demostración' : ' · mejor valoración primero'}`}</p>
+          </div>
+        </div>
+        {error && <p className="inline-error" role="alert">{error}</p>}
+        {cargando ? (
+          <div className="empty-state"><p>Cargando ranking…</p></div>
+        ) : error ? (
+          <div className="empty-state">
+            <h3>No se pudo cargar la vista temporal</h3>
+            <p>Verifica que el backend esté activo y que RANKING_DEMO_PUBLIC=true esté habilitado en desarrollo.</p>
+          </div>
+        ) : trabajadores.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-check" aria-hidden="true">—</span>
+            <h3>{Object.values(filtrosAplicados).some(Boolean) ? 'No hay coincidencias para estos filtros' : 'Aún no hay trabajadores rankeables'}</h3>
+            <p>Se requiere un trabajador activo, con especialidad asignada y al menos una evaluación registrada en la base.</p>
+          </div>
+        ) : (
+          <div className="alert-table-wrap">
+            <table className="alert-table ranking-table">
+              <thead>
+                <tr><th>#</th><th>Trabajador</th><th>Especialidades</th><th>Valoración media</th><th>Reseñas</th><th>Experiencia</th><th>Tipo</th></tr>
+              </thead>
+              <tbody>
+                {trabajadores.map((trabajador, index) => (
+                  <tr key={`${trabajador.nombre}-${index}`}>
+                    <td data-label="Posición"><span className={`rank-number ${trabajador.calificacionPromedio !== null && index < 3 ? 'rank-highlight' : ''}`}>{trabajador.calificacionPromedio === null ? '—' : String(index + 1).padStart(2, '0')}</span></td>
+                    <td data-label="Trabajador"><span className="event-name">{trabajador.nombre}</span>{trabajador.rut && <span className="client-name">{trabajador.rut}</span>}</td>
+                    <td data-label="Especialidades"><div className="specialty-list">{trabajador.especialidades.map((item) => <span className="specialty-tag" key={item.codigo}>{item.nombre}</span>)}</div></td>
+                    <td data-label="Valoración media">{trabajador.calificacionPromedio === null ? <span className="unrated-label">Sin reseñas</span> : <span className="ranking-score">{trabajador.calificacionPromedio.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{trabajador.tieneEvaluacionDemo && <span className="demo-chip">DEMO</span>}</span>}</td>
+                    <td data-label="Reseñas">{trabajador.totalEvaluaciones}</td>
+                    <td data-label="Experiencia">{trabajador.aniosExperiencia === null ? 'No informada' : <>{trabajador.aniosExperiencia} {trabajador.aniosExperiencia === 1 ? 'año' : 'años'}{trabajador.tieneExperienciaDemo && <span className="demo-chip">DEMO</span>}</>}</td>
+                    <td data-label="Tipo">{trabajador.esExterno ? 'Externo' : 'Interno'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      <p className="ranking-note">Las evaluaciones y especialidades DEMO son ficticias, se guardaron sólo para esta presentación y deben retirarse antes de usar la base en producción.</p>
+    </main>
+  );
+}
+
+function App() {
+  return (
+    <div className="app-shell">
+      <header className="topbar ranking-topbar">
+        <a className="brand" href="#ranking" aria-label="NES Eventos, ranking de trabajadores">
+          <span className="brand-stamp">N</span>
+          <span className="brand-name">NES <i>EVENTOS</i></span>
+        </a>
+        <span className="module-caption">GESTIÓN DE PERSONAL <i>/</i> RANKING</span>
+      </header>
+
+      <div id="ranking"><RankingView /></div>
+      <footer className="footer"><span>NES EVENTOS</span><span>Gestión interna</span></footer>
+    </div>
+  );
+}
+
+export default App;
