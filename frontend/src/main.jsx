@@ -6,6 +6,7 @@ import './styles/style.css'
 
 import App from './pages/App.jsx'
 import FormularioSolicitud from './pages/formularioSolicitud.jsx'
+import Presupuesto from './pages/presupuesto.jsx'
 
 const router = createBrowserRouter([
   {
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
     path: '/formulario-solicitud',
     element: <FormularioSolicitud />,
     
+  },
+  {
+    path: '/presupuesto',
+    element: <Presupuesto />,
   }
 ])
 
