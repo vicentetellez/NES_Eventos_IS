@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { rutSchema } from 'rut-kit/zod';
+
+export const rutClienteSchema = z.object({
+    rut: rutSchema
+}).strict();
 
 export const datosClienteNuevoCompletoSchema = z.object({
     nombre: z.string()

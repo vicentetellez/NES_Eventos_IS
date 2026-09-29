@@ -165,6 +165,7 @@ model Equipo {
 model Especialidad {
   codigo            Int                           @id @default(autoincrement()) @map("codigo")
   nombre            String                        @unique @db.VarChar(200)
+  tarifaHoraReferencial Int                       @default(0) @map("tarifa_hora_referencial")
   // DETERMINA SI LA ESPECIALIDAD VA A SALIR EN LA EVALUACION DE TRABAJADORES
   esEvaluable       Boolean                       @default(true) @map("es_evaluable")
 
