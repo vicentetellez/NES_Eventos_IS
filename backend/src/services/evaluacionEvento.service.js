@@ -13,3 +13,11 @@ export async function createEvaluacionEvento(evaluacionEvento){
 
     return {evaluacionEvento: newEvaluacionEvento};
 }
+
+export async function getEvaluacionEventoBycodigo(codigo){
+    const evaluacionEvento = await prisma.evaluacionEvento.findUnique({
+        where: {codigo}
+    });
+    if(!evaluacionEvento) throw new AppError('Evaluacion del evento no encontrada',404);
+    return {evaluacionEvento};
+}
