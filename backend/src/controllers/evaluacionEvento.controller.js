@@ -10,3 +10,13 @@ export const createEvaluacionEventoController = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getEvaluacionEventoBycodigoController = async (req, res, next) => {
+    try {
+        const {codigo} = req.validatedParams;
+        const result = await getEvaluacionEventoBycodigo(codigo);
+        responses.success(res, 200, "Busqueda de evaluacion del evento exitosa", result);
+    }catch(error){
+        next(error);
+    }
+};
