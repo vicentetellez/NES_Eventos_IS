@@ -11,6 +11,7 @@ import FormularioSolicitud from './pages/SolicitudEvento.jsx'
 // Privadas (Con sidebar y JWT)
 import CalendarioEvento from './pages/Calendario.jsx'
 import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
+import PanelCatalogo from './pages/PanelCatalogo.jsx'
 
 import './styles/style.css'
 
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
       {
         path: 'ranking-trabajadores',
         element: <RankingTrabajadores />,
+      },
+      {
+        path: 'panel/catalogos',
+        element: <PanelCatalogo />,
       },
       {
         path: '*',
