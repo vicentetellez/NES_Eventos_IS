@@ -1,6 +1,21 @@
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js';
 
+export async function existingEvaluacionEvento(codigoEvaluacion){
+    const evento = await prisma.evento.findUnique({
+        where: {codigoEvaluacion},
+        select: {codigo: true}
+    });
+    if(!evento) throw new AppError('Evento no encontrado',404);
+
+    
+    const evaluacionEvento = await prisma.evaluacionEvento.findUnique({
+        where: {codigoEvento: evento.codigo},
+        select: {codigo: true}
+    });
+    return evaluacionEvento !== null;
+}
+
 export async function createEvaluacionEvento(evaluacionEvento){
     const existingEvaluacionEvento = await prisma.evaluacionEvento.findUnique({
         where : {codigo: evaluacionEvento.codigo}
