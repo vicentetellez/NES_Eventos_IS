@@ -11,3 +11,12 @@ export const createEvaluacionTrabajadorController = async (req, res, next) => {
     }
 };
 
+export const getTrabajadoresParaEvaluacionController = async (req, res, next) => {
+    try {
+        const {codigoEvento} = req.validatedParams;
+        const result = await getTrabajadoresParaEvaluacionByCodigoEvento(codigoEvento);
+        response.success(res, 200, "Busqueda de trabajadores por especialidad exitosa", result);
+    }catch(error){
+        next(error);
+    }
+};
