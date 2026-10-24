@@ -1,5 +1,14 @@
 import { responses} from '../helpers/responses.js';
 import { getEvaluacionEventoBycodigo, createEvaluacionEvento } from '../services/evaluacionEvento.service.js';
+export const existingEvaluacionEventoController = async (req, res, next) => {
+    try {
+        const {codigoEvaluacion} = req.validatedParams;
+        const existe = await existingEvaluacionEvento(codigoEvaluacion);
+        response.success(res, 200, 'Consulta de evaluación existente exitosa', existe);
+    } catch(error) {
+        next(error);
+    }
+};
 
 export const createEvaluacionEventoController = async (req, res, next) => {
     try{
