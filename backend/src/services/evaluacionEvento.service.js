@@ -18,9 +18,26 @@ export async function existingEvaluacionEvento(codigoEvaluacion){
 
 export async function createEvaluacionEvento(evaluacionEvento){
     const existingEvaluacionEvento = await prisma.evaluacionEvento.findUnique({
-        where : {codigo: evaluacionEvento.codigo}
+        where: {codigoEvento: evaluacionEvento.codigoEvento}
     });
     if(existingEvaluacionEvento) throw new AppError('La evaluacion del evento ya existe',400);
+
+    const evento = await prisma.evento.findUnique({
+        where: {codigo: evaluacionEvento.codigoEvento},
+        select: {estado: true}
+    });
+    if(!evento) throw new AppError('Evento no encontrado',404);
+    
+    const participacionEvaluable = await prisma.trabajadorParticipaEvento.findFirst({
+        where: {
+            codigoEvento: evaluacionEvento.codigoEvento,
+            especialidad: {is: {esEvaluable: true}}
+        },
+        select: {rutTrabajador: true}
+    });
+    if(!participacionEvaluable) {
+        throw new AppError('No se puede enviar la reseña porque el evento no tiene trabajadores evaluables',400);
+    }
 
     const newEvaluacionEvento = await prisma.evaluacionEvento.create({
         data: evaluacionEvento
