@@ -10,12 +10,16 @@ import FormularioSolicitud from './pages/formularioSolicitud.jsx'
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />
+    element: <App />,
   },
   {
     path: '/formulario-solicitud',
     element: <FormularioSolicitud />,
-    
+
+  },
+  {
+    path: '/calendario-evento',
+    element: <CalendarioEvento />,
   }
 ])
 
