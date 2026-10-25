@@ -20,6 +20,10 @@ const router = createBrowserRouter([
   {
     path: '/calendario-evento',
     element: <CalendarioEvento />,
+  },
+  {
+    path: '/evaluacion/:codigoEvaluacion',
+    element: <EvaluacionEvento />,
   }
 ])
 
