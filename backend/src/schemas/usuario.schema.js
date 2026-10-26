@@ -33,8 +33,8 @@ export const createUsuarioSchema = z.object({
             .min(8, "La contraseña debe tener al menos 8 caracteres.")
             .max(100, "La contraseña no puede tener más de 100 caracteres."),
         rol: z
-            .enum(["ADMIN", "STAFF"], {
-                errorMap: () => ({ message: "El rol debe ser ADMIN o STAFF." })
+            .enum(["ADMIN", "STAFF", "GERENTE"], {
+                errorMap: () => ({ message: "El rol debe ser ADMIN, STAFF o GERENTE." })
             }),
     }).strict(),
     persona: z.object({
@@ -90,8 +90,8 @@ export const createUsuarioSchema = z.object({
 export const updateUsuarioSchema = z.object({
     usuario: z.object({
     rol: z
-        .enum(["ADMIN", "STAFF"], {
-            errorMap: () => ({ message: "El rol debe ser ADMIN o STAFF." })
+        .enum(["ADMIN", "STAFF", "GERENTE"], {
+            errorMap: () => ({ message: "El rol debe ser ADMIN, STAFF o GERENTE." })
         })
         .optional(),  
     }).optional(),

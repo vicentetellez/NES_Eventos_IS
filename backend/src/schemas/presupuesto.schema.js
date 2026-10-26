@@ -1,23 +1,30 @@
 import { z } from 'zod';
+import { CATEGORIAS_DETALLE } from '../services/calculoPresupuesto.service.js';
 
-const detalleAdicionalSchema = z.object({
-    categoria: z.enum([
-        'PERSONAL',
-        'EQUIPAMIENTO',
-        'TRANSPORTE',
-        'BANQUETERIA',
-        'DECORACION',
-        'OTRO'
-    ]),
+// Campos desconocidos (p. ej. subtotal, codigo) se descartan: el servidor recalcula los subtotales
+const detallePresupuestoSchema = z.object({
+    categoria: z.enum(CATEGORIAS_DETALLE),
     descripcion: z.string().min(1).max(500),
     cantidad: z.number().int().positive(),
-    precioUnitario: z.number().int().nonnegative()
+    precioUnitario: z.number().int().nonnegative(),
+    codigoEspecialidad: z.number().int().positive().optional()
+});
+
+const porcentajeMargenSchema = z.number().int().min(0).max(100);
+
+export const crearPresupuestoSchema = z.object({
+    porcentajeMargen: porcentajeMargenSchema.default(0),
+    detalles: z.array(detallePresupuestoSchema).min(1).max(200)
 }).strict();
 
-export const calcularCotizacionInicialSchema = z.object({
-    codigoTipoEvento: z.number().int().positive(),
-    horasEvento: z.number().int().positive(),
-    horasMontajeDesmontaje: z.number().int().nonnegative().nullish().transform((horas) => horas ?? 0),
-    cantidadPersonas: z.number().int().positive(),
-    detallesAdicionales: z.array(detalleAdicionalSchema).default([])
+export const actualizarPresupuestoSchema = z.object({
+    porcentajeMargen: porcentajeMargenSchema.optional(),
+    detalles: z.array(detallePresupuestoSchema).max(200).optional()
+}).strict().refine(
+    (datos) => datos.porcentajeMargen !== undefined || datos.detalles !== undefined,
+    { message: 'Debe enviar porcentajeMargen o detalles para modificar el presupuesto.' }
+);
+
+export const rechazarPresupuestoSchema = z.object({
+    observacion: z.string().trim().min(1, 'Debe indicar el motivo del rechazo.').max(1000)
 }).strict();
