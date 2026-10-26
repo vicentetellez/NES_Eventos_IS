@@ -1,6 +1,7 @@
 import { response } from '../helpers/responses.js';
 import {
     getAllEventosByFilterEstado,
+    getAlertasPagoPendiente,
     getEventoByCodigo,
     getEventoByCodigoEvaluacion,
     solicitudEvento,
@@ -8,6 +9,16 @@ import {
     deleteEvento,
     avanzarEstadoEvento
 } from '../services/evento.service.js';
+
+export const getAlertasPagoPendienteController = async (req, res, next) => {
+    try {
+        const { diasAnticipacion } = req.validatedQuery;
+        const resultado = await getAlertasPagoPendiente(diasAnticipacion);
+        response.success(res, 200, 'Alertas de pagos pendientes obtenidas correctamente', resultado);
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const getAllEventosByFilterEstadoController = async (req, res, next) => {
     try {
@@ -79,8 +90,10 @@ export const deleteEventoController = async (req, res, next) => {
 export const avanzarEstadoEventoController = async (req, res, next) => {
     try {
         const { codigo } = req.validatedParams;
-        const { estadoDestino } = req.body;
-        const evento = await avanzarEstadoEvento(codigo, estadoDestino, req.user.rut);
+        const { estadoDestino, fechaLimiteAbono } = req.body;
+        const evento = await avanzarEstadoEvento(codigo, estadoDestino, req.user.rut, {
+            fechaLimiteAbono
+        });
         response.success(res, 200, `Estado del evento con código ${codigo} actualizado correctamente`, { evento });
     } catch (error) {
         next(error);
