@@ -30,8 +30,8 @@ export const createTipoEventoSchema = z.object({
             .optional(),
         tarifaHoraBaseReferencial: z
             .number()
-            .positive({
-                message: "La tarifa por hora base referencial debe ser un número positivo"
+            .nonnegative({
+                message: "La tarifa por hora base referencial debe ser mayor o igual a 0"
             })
     })
 }).strict();
@@ -49,8 +49,8 @@ export const updateTipoEventoSchema = z.object({
             .optional(),
         tarifaHoraBaseReferencial: z
             .number()
-            .positive({
-                message: "La tarifa por hora base referencial debe ser un número positivo"
+            .nonnegative({
+                message: "La tarifa por hora base referencial debe ser mayor o igual a 0"
             })
             .optional()
     })

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import '../styles/style.css';
 import { login } from '../services/auth.service';
 import { getCalendarioEventos } from '../services/calendarioEvento.service';
 import { getEventosPorEstado } from '../services/evento.service';
@@ -308,4 +307,3 @@ export default function CalendarioEvento() {
     </div>
   );
 }
-
