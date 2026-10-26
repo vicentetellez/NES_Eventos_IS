@@ -3,6 +3,10 @@ import dotenv from 'dotenv';
 import argon2 from 'argon2';
 import { fileURLToPath } from "url";
 
+function parseBoolean(value) {
+    return value === 'true';
+}
+
 // Configuración para que sepa dónde estan las variables de entorno
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
