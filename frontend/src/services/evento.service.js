@@ -26,3 +26,15 @@ export const solicitudEvento = async (payload) => {
     throw new Error(mensajeError);
   }
 };
+
+export const getEventoByCodigoEvaluacion = async (codigoEvaluacion) => {
+  try {
+    const { data } = await api.get(`/evento/evaluacion/${encodeURIComponent(codigoEvaluacion)}`);
+    const evento = data?.data?.evento;
+    if (!evento) throw new Error('No se encontró el evento asociado al código.');
+    return evento;
+  } catch (error) {
+    const mensajeError = error.response?.data?.message || error.message || 'Error al obtener el evento';
+    throw new Error(mensajeError);
+  }
+};

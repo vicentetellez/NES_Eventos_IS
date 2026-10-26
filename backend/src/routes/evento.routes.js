@@ -58,9 +58,6 @@ router.get('/:codigo',
             getEventoByCodigoController);
 
 router.get('/evaluacion/:codigoEvaluacion', 
-            authenticateJwt,
-            blockIfPasswordChangeRequired,
-            blockIfNotActive,
             validate(codigoEvaluacionEventoSchema, 'params'),
             getEventoByCodigoEvaluacionController);
 
