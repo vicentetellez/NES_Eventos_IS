@@ -3,6 +3,7 @@ import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js'
 import { obtenerOrCrearCliente } from './cliente.service.js';
 import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
+import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
 
 // Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
@@ -33,85 +34,75 @@ export async function getAllEventosByFilterEstado(estado) {
     return ({ eventos });
 };
 
-export async function getEventoByCodigo(codigo) {
-    const evento = await prisma.evento.findUnique({
-        where: { codigo },
+export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
+    const ahora = new Date();
+    const hoy = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate()));
+    const fechaMaxima = new Date(hoy);
+    fechaMaxima.setUTCDate(fechaMaxima.getUTCDate() + diasAnticipacion);
+
+    const eventos = await prisma.evento.findMany({
+        where: {
+            estado: 'PENDIENTE_PAGO_ABONO',
+            fechaPagoAbono: null,
+            fechaLimiteAbono: { not: null, lte: fechaMaxima },
+            montoAbono: { not: null }
+        },
+        orderBy: { fechaLimiteAbono: 'asc' },
         select: {
             codigo: true,
-            codigoEvaluacion: true,
-            estado: true,
             fechaEvento: true,
-            horaInicio: true,
-            horasEvento: true,
-            horasMontajeDesmontaje: true,
-            cantidadPersonas: true,
-            fechaRegistro: true,
+            fechaLimiteAbono: true,
+            montoAbono: true,
+            tipoEvento: { select: { nombre: true } },
             tipoEventoCliente: true,
-            centroEventoCliente: true,
-            restriccionesAlimentarias: true,
-            comentariosAlcohol: true,
-            comentariosAdicionales: true,
-            codigoTipoEvento: true,
-            codigoCentroEvento: true,
-            rutCliente: true,
             cliente: {
                 select: {
-                    activo: true,
+                    persona: {
+                        select: {
+                            nombre: true,
+                            primerApellido: true,
+                            segundoApellido: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const alertas = eventos.map((evento) => {
+        const fechaLimite = new Date(evento.fechaLimiteAbono);
+        const diasRestantes = Math.round((fechaLimite - hoy) / 86400000);
+        const persona = evento.cliente.persona;
+
+        return {
+            codigoEvento: evento.codigo,
+            nombreEvento: evento.tipoEvento?.nombre ?? evento.tipoEventoCliente ?? `Evento #${evento.codigo}`,
+            fechaEvento: evento.fechaEvento,
+            nombreCliente: [persona.nombre, persona.primerApellido, persona.segundoApellido]
+                .filter(Boolean)
+                .join(' '),
+            montoPendiente: evento.montoAbono,
+            fechaLimiteAbono: evento.fechaLimiteAbono,
+            diasRestantes,
+            estadoAlerta: diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
+        };
+    });
+
+    return { fechaConsulta: ahora, diasAnticipacion, total: alertas.length, alertas };
+}
+
+export async function getEventoByCodigo(codigo) {
+    const evento = await prisma.evento.findUnique({
+        where: {
+            codigo: codigo
+        },
+        select: {
+            cliente: {
+                select: {
                     persona: {
                         select: {
                             rut: true,
                             nombre: true,
-                            primerApellido: true,
-                            segundoApellido: true,
-                            telefono: true,
-                            email: true,
-                        }
-                    }
-                }
-            },
-            tipoEvento: {
-                select: {
-                    codigo: true,
-                    nombre: true,
-                    tarifaHoraBaseReferencial: true,
-                    plantillas: {
-                        select: {
-                            cantidadFija: true,
-                            ratioInvitados: true,
-                            equipo: {
-                                select: {
-                                    codigo: true,
-                                    nombre: true,
-                                    arriendoHoraReferencial: true,
-                                }
-                            },
-                            especialidad: {
-                                select: {
-                                    codigo: true,
-                                    nombre: true,
-                                    tarifaHoraReferencial: true,
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            centroEvento: {
-                select: {
-                    codigo: true,
-                    nombre: true,
-                    direccionExacta: true,
-                    capacidadPersonas: true,
-                }
-            },
-            banqueterias: {
-                select: {
-                    cantidadRequerida: true,
-                    banqueteria: {
-                        select: {
-                            codigo: true,
-                            nombre: true,
-                            precioPersonaReferencial: true,
                         }
                     }
                 }
@@ -204,7 +195,7 @@ const transicionesPermitidas = {
     CANCELADO: []
 };
 
-export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario){
+export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario, datosAbono = {}){
     const evento = await prisma.evento.findUnique({ 
         where: { codigo: codigoEvento } 
     });
@@ -215,6 +206,16 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
 
     if (!transicionesPermitidas[evento.estado].includes(estadoDestino)) {
         throw new AppError(`No se puede cambiar de ${evento.estado} a ${estadoDestino}`, 400);
+    }
+
+    // El abono es el 50% del total del presupuesto, que debe estar validado por el gerente
+    let montoAbono;
+    if (estadoDestino === 'PENDIENTE_PAGO_ABONO') {
+        const presupuesto = await prisma.presupuesto.findUnique({ where: { codigoEvento } });
+        if (!presupuesto || presupuesto.estado !== 'VALIDADO') {
+            throw new AppError('El evento necesita un presupuesto validado por el gerente para pasar a PENDIENTE_PAGO_ABONO', 409);
+        }
+        montoAbono = calcularPrimerAbono(presupuesto.total);
     }
    
     if (estadoDestino === 'ORGANIZANDO') {
@@ -237,7 +238,11 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
                 rutUsuarioPagoAbono: evento.rutUsuarioPagoAbono,
                 rutUsuarioPagoFinal: evento.rutUsuarioPagoFinal,
                 fechaPagoAbono: evento.fechaPagoAbono,
-                fechaPagoFinal: evento.fechaPagoFinal }
+                fechaPagoFinal: evento.fechaPagoFinal,
+                ...(estadoDestino === 'PENDIENTE_PAGO_ABONO' ? {
+                    fechaLimiteAbono: datosAbono.fechaLimiteAbono,
+                    montoAbono
+                } : {}) }
     });
     return updatedEvento;
 };
