@@ -22,6 +22,10 @@ export const PORT = process.env.PORT;
 if (!PORT) {
     throw new Error("PORT is not defined");
 }
+export const COOKIE_SECURE = parseBoolean(process.env.COOKIE_SECURE)
+if (COOKIE_SECURE && NODE_ENV !== 'production') {
+    throw new Error("COOKIE_SECURE cannot be true when NODE_ENV is not production");
+}
 // DATABASE
 export const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
