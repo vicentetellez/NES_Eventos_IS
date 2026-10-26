@@ -10,6 +10,6 @@ export const getCalendarioEventos = async () => {
         : [];
   } catch (error) {
     const mensajeError = error.response?.data?.message || 'Error al obtener el calendario';
-    throw new Error(mensajeError, { cause: error });
+    throw new Error(mensajeError);
   }
 };

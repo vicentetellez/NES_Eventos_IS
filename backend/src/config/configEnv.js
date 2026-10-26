@@ -14,6 +14,8 @@ export const NODE_ENV = process.env.NODE_ENV;
 if (!NODE_ENV) {
     throw new Error("NODE_ENV is not defined");
 }
+export const RANKING_DEMO_PUBLIC = NODE_ENV === 'development'
+    && process.env.RANKING_DEMO_PUBLIC === 'true';
 export const PORT = process.env.PORT;
 if (!PORT) {
     throw new Error("PORT is not defined");

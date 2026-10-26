@@ -33,6 +33,63 @@ export async function getAllEventosByFilterEstado(estado) {
     return ({ eventos });
 };
 
+export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
+    const ahora = new Date();
+    const hoy = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate()));
+    const fechaMaxima = new Date(hoy);
+    fechaMaxima.setUTCDate(fechaMaxima.getUTCDate() + diasAnticipacion);
+
+    const eventos = await prisma.evento.findMany({
+        where: {
+            estado: 'PENDIENTE_PAGO_ABONO',
+            fechaPagoAbono: null,
+            fechaLimiteAbono: { not: null, lte: fechaMaxima },
+            montoAbono: { not: null }
+        },
+        orderBy: { fechaLimiteAbono: 'asc' },
+        select: {
+            codigo: true,
+            fechaEvento: true,
+            fechaLimiteAbono: true,
+            montoAbono: true,
+            tipoEvento: { select: { nombre: true } },
+            tipoEventoCliente: true,
+            cliente: {
+                select: {
+                    persona: {
+                        select: {
+                            nombre: true,
+                            primerApellido: true,
+                            segundoApellido: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const alertas = eventos.map((evento) => {
+        const fechaLimite = new Date(evento.fechaLimiteAbono);
+        const diasRestantes = Math.round((fechaLimite - hoy) / 86400000);
+        const persona = evento.cliente.persona;
+
+        return {
+            codigoEvento: evento.codigo,
+            nombreEvento: evento.tipoEvento?.nombre ?? evento.tipoEventoCliente ?? `Evento #${evento.codigo}`,
+            fechaEvento: evento.fechaEvento,
+            nombreCliente: [persona.nombre, persona.primerApellido, persona.segundoApellido]
+                .filter(Boolean)
+                .join(' '),
+            montoPendiente: evento.montoAbono,
+            fechaLimiteAbono: evento.fechaLimiteAbono,
+            diasRestantes,
+            estadoAlerta: diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
+        };
+    });
+
+    return { fechaConsulta: ahora, diasAnticipacion, total: alertas.length, alertas };
+}
+
 export async function getEventoByCodigo(codigo) {
     const evento = await prisma.evento.findUnique({
         where: {
@@ -137,7 +194,7 @@ const transicionesPermitidas = {
     CANCELADO: []
 };
 
-export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario){
+export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario, datosAbono = {}){
     const evento = await prisma.evento.findUnique({ 
         where: { codigo: codigoEvento } 
     });
@@ -170,7 +227,11 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
                 rutUsuarioPagoAbono: evento.rutUsuarioPagoAbono,
                 rutUsuarioPagoFinal: evento.rutUsuarioPagoFinal,
                 fechaPagoAbono: evento.fechaPagoAbono,
-                fechaPagoFinal: evento.fechaPagoFinal }
+                fechaPagoFinal: evento.fechaPagoFinal,
+                ...(estadoDestino === 'PENDIENTE_PAGO_ABONO' ? {
+                    fechaLimiteAbono: datosAbono.fechaLimiteAbono,
+                    montoAbono: datosAbono.montoAbono
+                } : {}) }
     });
     return updatedEvento;
 };

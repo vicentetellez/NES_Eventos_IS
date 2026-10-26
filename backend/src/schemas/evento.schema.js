@@ -34,8 +34,27 @@ export const avanzarEstadoEventoSchema = z.object({
         'CANCELADO'
     ], {
         errorMap: () => ({ message: 'El estado destino no es válido.' })
-    })
-}).strict();
+    }),
+    fechaLimiteAbono: z.coerce.date().optional(),
+    montoAbono: z.coerce.number().int().positive().optional()
+}).strict().superRefine((datos, context) => {
+    if (datos.estadoDestino === 'PENDIENTE_PAGO_ABONO') {
+        if (!datos.fechaLimiteAbono) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['fechaLimiteAbono'],
+                message: 'La fecha límite del abono es obligatoria.'
+            });
+        }
+        if (datos.montoAbono === undefined) {
+            context.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['montoAbono'],
+                message: 'El monto del abono es obligatorio.'
+            });
+        }
+    }
+});
 
 export const getAllEventosByFilterEstadoSchema = z.object({
     estado: z
@@ -220,4 +239,8 @@ export const updateEventoSchema = z.object({
             .positive("El código del centro de evento debe ser un número positivo.")
             .optional(),
     }).strict()
+}).strict();
+
+export const getAlertasPagoPendienteSchema = z.object({
+    diasAnticipacion: z.coerce.number().int().min(0).max(30).default(3)
 }).strict();

@@ -12,11 +12,13 @@ import {
     codigoEvaluacionEventoSchema,
     avanzarEstadoEventoSchema,
     getAllEventosByFilterEstadoSchema,
+    getAlertasPagoPendienteSchema,
     solicitudEventoSchema,
     updateEventoSchema
 } from '../schemas/evento.schema.js';
 import {
     getAllEventosByFilterEstadoController,
+    getAlertasPagoPendienteController,
     getEventoByCodigoController,
     getEventoByCodigoEvaluacionController,
     solicitudEventoController,
@@ -26,6 +28,14 @@ import {
 } from '../controllers/evento.controller.js';
 
 const router = Router();
+
+router.get('/alertas/pagos-pendientes',
+            authenticateJwt,
+            blockIfPasswordChangeRequired,
+            blockIfNotActive,
+            verifyRoles('ADMIN', 'STAFF'),
+            validate(getAlertasPagoPendienteSchema, 'query'),
+            getAlertasPagoPendienteController);
 
 router.post('/solicitud',
             solicitudEventoLimiter,
