@@ -815,6 +815,155 @@ async function seedCatalogosPresupuesto(){
     console.log('Catalogos de presupuesto de prueba sembrados (valores demostrativos).');
 }
 
+function calcularDigitoVerificador(cuerpo) {
+    let suma = 0;
+    let factor = 2;
+    for (const digito of String(cuerpo).split('').reverse()) {
+        suma += Number(digito) * factor;
+        factor = factor === 7 ? 2 : factor + 1;
+    }
+    const resto = 11 - (suma % 11);
+    if (resto === 11) return '0';
+    if (resto === 10) return 'K';
+    return String(resto);
+}
+
+function crearRutDemo(cuerpo) {
+    return `${cuerpo}-${calcularDigitoVerificador(cuerpo)}`;
+}
+
+async function hashPasswordSeed(password) {
+    return argon2.hash(password, {
+        type: ARGON2_TYPE,
+        memoryCost: parseInt(ARGON2_MEMORY_COST),
+        timeCost: parseInt(ARGON2_TIME_COST),
+        parallelism: parseInt(ARGON2_PARALLELISM),
+    });
+}
+
+async function seedGerente(){
+    try {
+        const rut = crearRutDemo(29999999);
+        await prisma.persona.upsert({
+            where: { rut },
+            update: {},
+            create: {
+                rut,
+                nombre: 'Gerente',
+                primerApellido: 'General',
+                segundoApellido: 'NES',
+                fechaNacimiento: new Date('1980-01-01'),
+                telefono: '911111111',
+                email: 'gerente@example.com',
+                codigoComuna: 181
+            }
+        });
+
+        const usuarioExistente = await prisma.usuario.findUnique({ where: { rut } });
+        if (!usuarioExistente) {
+            await prisma.usuario.create({
+                data: {
+                    rut,
+                    password: await hashPasswordSeed('password123'),
+                    rol: 'GERENTE',
+                    ultimoAcceso: new Date(),
+                    debeCambiarPassword: false
+                }
+            });
+        }
+        console.log(`Usuario GERENTE listo (rut ${rut}).`);
+    } catch (error) {
+        console.error('Error al sembrar el usuario GERENTE:', error);
+    }
+}
+
+// Personal demostrativo. Las especialidades "fijas" (sueldo mensual) no se cobran por hora en el presupuesto
+// porque su costo está cubierto por la tarifa base del evento. Los externos se cobran con la tarifa acordada.
+async function seedPersonalTrabajadores(){
+    const nombres = ['Camilo', 'Francisca', 'Matías', 'Javiera', 'Sebastián', 'Constanza', 'Nicolás', 'Daniela', 'Felipe', 'Catalina',
+        'Cristóbal', 'Fernanda', 'Rodrigo', 'Paula', 'Diego', 'Macarena', 'Andrés', 'Bárbara', 'Tomás', 'Camila'];
+    const apellidos = ['González', 'Muñoz', 'Rojas', 'Díaz', 'Pérez', 'Soto', 'Contreras', 'Silva', 'Martínez', 'Sepúlveda',
+        'Morales', 'Rodríguez', 'López', 'Fuentes', 'Hernández', 'Torres', 'Araya', 'Flores', 'Espinoza', 'Valenzuela'];
+
+    const especialidadesPersonal = [
+        { nombre: 'Jefe de Operaciones y Logistica', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 1100000, externos: 0 },
+        { nombre: 'Ejecutivo de Produccion y Comercial', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 2, sueldo: 900000, externos: 0 },
+        { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000, esPersonalFijo: true, internos: 1, sueldo: 850000, externos: 1 },
+        { nombre: 'Iluminador', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 800000, externos: 0 },
+        { nombre: 'Electrico', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 750000, externos: 0 },
+        { nombre: 'Encargado de bodega', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 700000, externos: 0 },
+        { nombre: 'Conductor/Auxiliar', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 2, sueldo: 650000, externos: 0 },
+        { nombre: 'Garzon', tarifaHoraReferencial: 8000, esPersonalFijo: false, internos: 3, sueldo: 520000, externos: 4 },
+        { nombre: 'DJ', tarifaHoraReferencial: 20000, esPersonalFijo: false, internos: 2, sueldo: 600000, externos: 1 },
+        { nombre: 'Animador / Maestro de ceremonia', tarifaHoraReferencial: 25000, esPersonalFijo: false, internos: 0, sueldo: null, externos: 2 },
+        { nombre: 'Fotografo / Videografo', tarifaHoraReferencial: 20000, esPersonalFijo: false, internos: 0, sueldo: null, externos: 2 },
+        { nombre: 'Guardia de seguridad', tarifaHoraReferencial: 6000, esPersonalFijo: false, internos: 2, sueldo: 560000, externos: 3 },
+        { nombre: 'Personal de apoyo', tarifaHoraReferencial: 5000, esPersonalFijo: false, internos: 2, sueldo: 500000, externos: 4 }
+    ];
+
+    let indice = 0;
+    let trabajadoresProcesados = 0;
+
+    const asegurarTrabajador = async (codigoEspecialidad, esExterno, sueldo) => {
+        indice += 1;
+        const rut = crearRutDemo(30000000 + indice);
+        await prisma.persona.upsert({
+            where: { rut },
+            update: {},
+            create: {
+                rut,
+                nombre: nombres[indice % nombres.length],
+                primerApellido: apellidos[(indice * 7) % apellidos.length],
+                segundoApellido: apellidos[(indice * 3 + 5) % apellidos.length],
+                fechaNacimiento: new Date(`${1980 + (indice % 20)}-0${1 + (indice % 9)}-15`),
+                telefono: String(970000000 + indice),
+                email: `trabajador${indice}@neseventos.example`,
+                codigoComuna: 181
+            }
+        });
+        await prisma.trabajador.upsert({
+            where: { rut },
+            update: {},
+            create: {
+                rut,
+                esExterno,
+                sueldo: esExterno ? null : sueldo,
+                aniosExperiencia: 1 + (indice % 12)
+            }
+        });
+        await prisma.trabajadorTieneEspecialidad.upsert({
+            where: { rutTrabajador_codigoEspecialidad: { rutTrabajador: rut, codigoEspecialidad } },
+            update: {},
+            create: { rutTrabajador: rut, codigoEspecialidad }
+        });
+        trabajadoresProcesados += 1;
+    };
+
+    try {
+        for (const item of especialidadesPersonal) {
+            const especialidad = await prisma.especialidad.upsert({
+                where: { nombre: item.nombre },
+                update: { esPersonalFijo: item.esPersonalFijo },
+                create: {
+                    nombre: item.nombre,
+                    tarifaHoraReferencial: item.tarifaHoraReferencial,
+                    esPersonalFijo: item.esPersonalFijo
+                }
+            });
+
+            for (let i = 0; i < item.internos; i++) {
+                await asegurarTrabajador(especialidad.codigo, false, item.sueldo);
+            }
+            for (let i = 0; i < item.externos; i++) {
+                await asegurarTrabajador(especialidad.codigo, true, null);
+            }
+        }
+        console.log(`Personal interno y externo de prueba sembrado (${trabajadoresProcesados} trabajadores demostrativos).`);
+    } catch (error) {
+        console.error('Error al sembrar el personal de prueba:', error);
+    }
+}
+
 
 
 
@@ -833,6 +982,8 @@ async function main(){
     await seedBanqueteria();
     await seedEventos();
     await seedCatalogosPresupuesto();
+    await seedGerente();
+    await seedPersonalTrabajadores();
 }
 
 main()
