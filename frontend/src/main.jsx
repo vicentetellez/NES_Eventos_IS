@@ -1,29 +1,63 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import Root from './pages/Root'
+import Home from './pages/Home'
+// Publicas (Sin sidebar)
+import Error404 from './pages/Error404'
+import Login from './pages/Login'
+import FormularioSolicitud from './pages/SolicitudEvento.jsx'
+//import FormularioEvaluacion from './pages/EvaluarEvento.jsx'
+// Privadas (Con sidebar y JWT)
+import CalendarioEvento from './pages/Calendario.jsx'
+import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
+import PanelCatalogo from './pages/PanelCatalogo.jsx'
 
 import './styles/style.css'
-
-import App from './pages/App.jsx'
-import FormularioSolicitud from './pages/formularioSolicitud.jsx'
-import CalendarioEvento from './pages/calendarioEvento.jsx'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />
-  },
-  {
-    path: '/formulario-solicitud',
-    element: <FormularioSolicitud />,
-  },
-  {
-    path: '/calendario-evento',
-    element: <CalendarioEvento />,
-  },
-  {
-    path: '/evaluacion/:codigoEvaluacion',
-    element: <EvaluacionEvento />,
+    element: <Root />,
+    errorElement: <Error404 />,
+    children: [
+      { 
+        index: true, 
+        element: <Navigate to="/login" replace /> 
+      },
+      {
+        path: 'login',
+        element: <Login />,
+      },
+      {
+        path: 'home',
+        element: <Home />,
+      },
+      {
+        path: 'solicitud-evento',
+        element: <FormularioSolicitud />,
+      },
+      // {
+      //   path: 'evaluar-evento',
+      //   element: <FormularioEvaluacion />,
+      // },
+      {
+        path: 'calendario-evento',
+        element: <CalendarioEvento />,
+      },
+      {
+        path: 'ranking-trabajadores',
+        element: <RankingTrabajadores />,
+      },
+      {
+        path: 'panel/catalogos',
+        element: <PanelCatalogo />,
+      },
+      {
+        path: '*',
+        element: <Error404 />,
+      },
+    ],
   }
 ])
 

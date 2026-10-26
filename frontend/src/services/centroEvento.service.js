@@ -1,11 +1,56 @@
 import api from './root.service.js';
 
+const getErrorMessage = (error, fallback) =>
+  error.response?.data?.message || fallback;
+
+export const getCentrosEventoByStatus = async (activo) => {
+  try {
+    const { data } = await api.get('/centro-evento', { params: { activo } });
+    return data.data.centroEventos;
+  } catch (error) {
+    const message = getErrorMessage(error, 'Error al obtener los centros de evento');
+    if (error.response?.status === 404 && message.toLowerCase().includes('no hay centros de eventos')) {
+      return [];
+    }
+    throw new Error(message, { cause: error });
+  }
+};
+
 export const getCentrosEventoPublicos = async () => {
   try {
     const { data } = await api.get('/centro-evento/publicos');
     return data.data.centroEventos;
   } catch (error) {
     const mensajeError = error.response?.data?.message || 'Error al obtener los centros de evento';
-    throw new Error(mensajeError);
+    throw new Error(mensajeError, { cause: error });
+  }
+};
+
+export const createCentroEvento = async (centroEventoData) => {
+  try {
+    const { data } = await api.post('/centro-evento', { centroEventoData });
+    return data.data.centroEvento;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al crear el centro de evento'), { cause: error });
+  }
+};
+
+export const updateCentroEvento = async (codigo, centroEventoData) => {
+  try {
+    const { data } = await api.patch(`/centro-evento/${codigo}`, { centroEventoData });
+    return data.data.centroEvento;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al actualizar el centro de evento'), { cause: error });
+  }
+};
+
+export const changeCentroEventoStatus = async (codigo, activo) => {
+  try {
+    const { data } = await api.patch(`/centro-evento/${codigo}/status`, {}, {
+      params: { activo },
+    });
+    return data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Error al cambiar el estado del centro de evento'), { cause: error });
   }
 };
