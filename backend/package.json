@@ -9,11 +9,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "prisma:migrate": "npx prisma migrate dev",
-    "prisma:generate": "npx prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
-    "prisma:seed": "node prisma/semilla.js",
-    "demo:ranking": "node prisma/ranking-demo.js"
+    "prisma:seed": "node prisma/semilla.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
