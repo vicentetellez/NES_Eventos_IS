@@ -1,4 +1,5 @@
 import app from './app.js';
+import prisma from './config/prisma.js';
 import { PORT } from './config/configEnv.js';
 
 async function bootstrap(){
