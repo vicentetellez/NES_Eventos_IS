@@ -58,6 +58,7 @@ model Trabajador {
   rut                   String                        @id @db.VarChar(12)
   esExterno             Boolean                       @default(false) @map("es_externo")
   sueldo                Int?                      
+  aniosExperiencia      Int?                          @map("anios_experiencia")
   activo                Boolean                       @default(true)
   fechaRegistro         DateTime                      @default(now()) @map("fecha_registro") @db.Timestamptz(3)
 
@@ -241,6 +242,8 @@ model Evento {
   fechaRegistro            DateTime                     @default(now()) @map("fecha_registro") @db.Timestamptz(3)
   
   fechaPagoAbono           DateTime?                    @map("fecha_pago_abono")
+  fechaLimiteAbono          DateTime?                    @map("fecha_limite_abono") @db.Date
+  montoAbono                Int?                         @map("monto_abono")
   rutUsuarioPagoAbono      String?                      @map("rut_usuario_pago_abono") @db.VarChar(12)
   fechaPagoFinal           DateTime?                    @map("fecha_pago_final")
   rutUsuarioPagoFinal      String?                      @map("rut_usuario_pago_final") @db.VarChar(12)
@@ -319,9 +322,8 @@ model Presupuesto {
   fechaDictamen                    DateTime?            @map("fecha_dictamen") @db.Timestamptz(3)
   observacionDictamen              String?              @map("observacion_dictamen") @db.Text
   tarifaHoraBase                   Int                  @map("tarifa_hora_base")
-  // PORCENTAJE (0-100) QUE SE APLICA SOLO SOBRE LAS LINEAS DE EQUIPAMIENTO (PROPIAS Y EXTERNAS)
-  porcentajeMargen                 Int                  @default(0) @map("porcentaje_margen")
-  // INCLUYE EL MARGEN. SI SE EDITA DESPUES DEL PRIMER ABONO, EL SALDO PENDIENTE ES total - evento.montoAbono
+  // INCLUYE EL MARGEN FIJO (20%) SOBRE LAS LINEAS DE EQUIPAMIENTO ARRENDADO A TERCEROS (esArriendoTercero).
+  // SI SE EDITA DESPUES DEL PRIMER ABONO, EL SALDO PENDIENTE ES total - evento.montoAbono
   total                            Int
   rutUsuarioDictamen               String?              @map("rut_usuario_dictamen") @db.VarChar(12)
   codigoEvento                     Int                  @unique @map("codigo_evento")
@@ -340,7 +342,8 @@ model DetallePresupuesto {
   cantidad          Int
   precioUnitario    Int         @map("precio_unitario") 
   subtotal          Int   
-  // REFERENCIAS OPCIONALES PARA LAS LINEAS DE PERSONAL. SI rutTrabajador TIENE VALOR, LA LINEA LA ADMINISTRA EL SISTEMA
+  // SOLO PARA CATEGORIA EQUIPAMIENTO: EL COSTO (subtotal) ES DE UN ARRIENDO A TERCERO Y LLEVA MARGEN
+  esArriendoTercero Boolean     @default(false) @map("es_arriendo_tercero")  // REFERENCIAS OPCIONALES PARA LAS LINEAS DE PERSONAL. SI rutTrabajador TIENE VALOR, LA LINEA LA ADMINISTRA EL SISTEMA
   // AL ASIGNAR/QUITAR TRABAJADORES EXTERNOS DEL EVENTO
   codigoEspecialidad Int?       @map("codigo_especialidad")
   rutTrabajador     String?     @map("rut_trabajador") @db.VarChar(12)
