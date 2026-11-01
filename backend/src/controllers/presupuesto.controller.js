@@ -5,9 +5,21 @@ import {
     enviarPresupuestoAValidacion,
     obtenerPrecargaPresupuesto,
     obtenerPresupuesto,
+    obtenerVistaPreviaCantidadPersonas,
     rechazarPresupuesto,
     validarPresupuesto
 } from '../services/presupuesto.service.js';
+
+export async function obtenerVistaPreviaCantidadPersonasController(req, res, next) {
+    try {
+        const { codigo } = req.validatedParams;
+        const { cantidadPersonas } = req.validatedQuery;
+        const resultado = await obtenerVistaPreviaCantidadPersonas(codigo, cantidadPersonas);
+        response.success(res, 200, 'Vista previa del presupuesto obtenida correctamente', resultado);
+    } catch (error) {
+        next(error);
+    }
+}
 
 export async function obtenerPrecargaPresupuestoController(req, res, next) {
     try {

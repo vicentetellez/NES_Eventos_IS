@@ -7,23 +7,21 @@ const detallePresupuestoSchema = z.object({
     descripcion: z.string().min(1).max(500),
     cantidad: z.number().int().positive(),
     precioUnitario: z.number().int().nonnegative(),
-    codigoEspecialidad: z.number().int().positive().optional()
+    codigoEspecialidad: z.number().int().positive().optional(),
+    esArriendoTercero: z.boolean().optional()
 });
 
-const porcentajeMargenSchema = z.number().int().min(0).max(100);
-
 export const crearPresupuestoSchema = z.object({
-    porcentajeMargen: porcentajeMargenSchema.default(0),
     detalles: z.array(detallePresupuestoSchema).min(1).max(200)
 }).strict();
 
 export const actualizarPresupuestoSchema = z.object({
-    porcentajeMargen: porcentajeMargenSchema.optional(),
-    detalles: z.array(detallePresupuestoSchema).max(200).optional()
-}).strict().refine(
-    (datos) => datos.porcentajeMargen !== undefined || datos.detalles !== undefined,
-    { message: 'Debe enviar porcentajeMargen o detalles para modificar el presupuesto.' }
-);
+    detalles: z.array(detallePresupuestoSchema).max(200)
+}).strict();
+
+export const vistaPreviaCantidadPersonasSchema = z.object({
+    cantidadPersonas: z.coerce.number().int().positive().max(100000)
+}).strict();
 
 export const rechazarPresupuestoSchema = z.object({
     observacion: z.string().trim().min(1, 'Debe indicar el motivo del rechazo.').max(1000)

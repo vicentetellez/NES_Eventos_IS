@@ -1,13 +1,14 @@
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js';
 import {
+    PORCENTAJE_MARGEN_ARRIENDO,
     calcularCotizacionInicial,
     calcularPrimerAbono,
     calcularTotales,
     crearDetalle
 } from './calculoPresupuesto.service.js';
 
-const ESTADOS_EVENTO_EDITABLES = ['COTIZANDO', 'PENDIENTE_PAGO_ABONO', 'ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
+const ESTADOS_EVENTO_EDITABLES = ['COTIZANDO', 'ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
 
 // Los errores de validación del cálculo son TypeError: se informan como 422
 async function ejecutarCalculo(funcionCalculo) {
@@ -27,7 +28,7 @@ export function calcularHorasTotalesEvento(evento) {
 
 function formatearPresupuesto(presupuesto, evento) {
     const detalles = [...presupuesto.detalles].sort((a, b) => a.codigo - b.codigo);
-    const { subtotal, montoMargen } = calcularTotales(detalles, presupuesto.porcentajeMargen);
+    const { subtotal, montoMargen } = calcularTotales(detalles);
     const montoAbono = evento.montoAbono ?? null;
 
     return {
@@ -38,7 +39,7 @@ function formatearPresupuesto(presupuesto, evento) {
         rutUsuarioDictamen: presupuesto.rutUsuarioDictamen,
         observacionDictamen: presupuesto.observacionDictamen,
         tarifaHoraBase: presupuesto.tarifaHoraBase,
-        porcentajeMargen: presupuesto.porcentajeMargen,
+        porcentajeMargenArriendo: PORCENTAJE_MARGEN_ARRIENDO,
         detalles,
         subtotal,
         montoMargen,
@@ -69,15 +70,13 @@ async function obtenerPresupuestoDeEventoOError(codigoEvento, cliente = prisma) 
     return presupuesto;
 }
 
-// Recalcula y guarda el total del presupuesto a partir de sus líneas. Debe llamarse en cada cambio de líneas o margen.
+// Recalcula y guarda el total del presupuesto a partir de sus líneas. Debe llamarse en cada cambio de líneas.
 export async function recalcularTotalPresupuesto(cliente, codigoPresupuesto, datosExtra = {}) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigo: codigoPresupuesto },
         include: { detalles: true }
     });
-    const { total } = await ejecutarCalculo(() =>
-        calcularTotales(presupuesto.detalles, datosExtra.porcentajeMargen ?? presupuesto.porcentajeMargen)
-    );
+    const { total } = await ejecutarCalculo(() => calcularTotales(presupuesto.detalles));
 
     return cliente.presupuesto.update({
         where: { codigo: codigoPresupuesto },
@@ -87,7 +86,8 @@ export async function recalcularTotalPresupuesto(cliente, codigoPresupuesto, dat
 }
 
 // Líneas que se cargan por primera vez al abrir el formulario de presupuesto. No guarda nada.
-export async function obtenerPrecargaPresupuesto(codigoEvento) {
+// Con cantidadPersonasSimulada se obtiene una vista previa con otra cantidad de invitados (sin modificar el evento).
+export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasSimulada = undefined) {
     const evento = await prisma.evento.findUnique({
         where: { codigo: codigoEvento },
         include: {
@@ -113,13 +113,13 @@ export async function obtenerPrecargaPresupuesto(codigoEvento) {
             : null,
         horasEvento: evento.horasEvento,
         horasMontajeDesmontaje: evento.horasMontajeDesmontaje ?? 0,
-        cantidadPersonas: evento.cantidadPersonas,
+        cantidadPersonas: cantidadPersonasSimulada ?? evento.cantidadPersonas,
         plantillas: evento.tipoEvento?.plantillas ?? [],
         banqueterias: evento.banqueterias
     }));
 
     return {
-        evento: { codigo: evento.codigo, estado: evento.estado },
+        evento: { codigo: evento.codigo, estado: evento.estado, cantidadPersonas: cantidadPersonasSimulada ?? evento.cantidadPersonas },
         tipoEvento: evento.tipoEvento
             ? { codigo: evento.tipoEvento.codigo, nombre: evento.tipoEvento.nombre }
             : null,
@@ -132,7 +132,27 @@ export async function obtenerPresupuesto(codigoEvento) {
     return { presupuesto: formatearPresupuesto(presupuesto, presupuesto.evento) };
 }
 
-export async function crearPresupuesto(codigoEvento, { porcentajeMargen = 0, detalles }) {
+// Vista previa del presupuesto si cambia la cantidad de invitados. No guarda nada: el staff revisa la propuesta,
+// actualiza la cantidad en el evento y aplica las líneas con la edición normal del presupuesto.
+// La banquetería no se recalcula (se edita aparte) y las líneas manuales y de externos asignados no se consideran.
+export async function obtenerVistaPreviaCantidadPersonas(codigoEvento, cantidadPersonas) {
+    const presupuesto = await obtenerPresupuestoDeEventoOError(codigoEvento);
+
+    if (!ESTADOS_EVENTO_EDITABLES.includes(presupuesto.evento.estado)) {
+        throw new AppError(`No se puede simular cambios en un evento en estado ${presupuesto.evento.estado}`, 409);
+    }
+
+    const { cotizacion } = await obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonas);
+
+    return {
+        cantidadPersonasActual: presupuesto.evento.cantidadPersonas,
+        cantidadPersonasSimulada: cantidadPersonas,
+        presupuestoActual: formatearPresupuesto(presupuesto, presupuesto.evento),
+        propuesta: cotizacion
+    };
+}
+
+export async function crearPresupuesto(codigoEvento, { detalles }) {
     const evento = await prisma.evento.findUnique({
         where: { codigo: codigoEvento },
         include: { tipoEvento: true, presupuesto: true }
@@ -149,13 +169,12 @@ export async function crearPresupuesto(codigoEvento, { porcentajeMargen = 0, det
     }
 
     const detallesCalculados = await ejecutarCalculo(() => detalles.map(crearDetalle));
-    const { total } = await ejecutarCalculo(() => calcularTotales(detallesCalculados, porcentajeMargen));
+    const { total } = await ejecutarCalculo(() => calcularTotales(detallesCalculados));
 
     const presupuesto = await prisma.presupuesto.create({
         data: {
             estado: 'BORRADOR',
             tarifaHoraBase: evento.tipoEvento?.tarifaHoraBaseReferencial ?? 0,
-            porcentajeMargen,
             total,
             codigoEvento,
             detalles: { create: detallesCalculados }
@@ -166,9 +185,9 @@ export async function crearPresupuesto(codigoEvento, { porcentajeMargen = 0, det
     return { presupuesto: formatearPresupuesto(presupuesto, evento) };
 }
 
-// Reemplaza las líneas editables y/o el margen. Las líneas administradas por el sistema (trabajadores asignados)
+// Reemplaza las líneas editables. Las líneas administradas por el sistema (trabajadores asignados)
 // no se tocan. Después de la primera validación del gerente no se vuelve a exigir validación.
-export async function actualizarPresupuesto(codigoEvento, { porcentajeMargen, detalles }) {
+export async function actualizarPresupuesto(codigoEvento, { detalles }) {
     return prisma.$transaction(async (tx) => {
         const existente = await obtenerPresupuestoDeEventoOError(codigoEvento, tx);
 
@@ -190,7 +209,6 @@ export async function actualizarPresupuesto(codigoEvento, { porcentajeMargen, de
         }
 
         const actualizado = await recalcularTotalPresupuesto(tx, existente.codigo, {
-            ...(porcentajeMargen !== undefined ? { porcentajeMargen } : {}),
             ...(existente.estado === 'RECHAZADO' ? { estado: 'BORRADOR' } : {})
         });
 

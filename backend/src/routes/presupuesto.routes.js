@@ -10,7 +10,8 @@ import { codigoEventoSchema } from '../schemas/evento.schema.js';
 import {
     actualizarPresupuestoSchema,
     crearPresupuestoSchema,
-    rechazarPresupuestoSchema
+    rechazarPresupuestoSchema,
+    vistaPreviaCantidadPersonasSchema
 } from '../schemas/presupuesto.schema.js';
 import {
     actualizarPresupuestoController,
@@ -18,6 +19,7 @@ import {
     enviarPresupuestoAValidacionController,
     obtenerPrecargaPresupuestoController,
     obtenerPresupuestoController,
+    obtenerVistaPreviaCantidadPersonasController,
     rechazarPresupuestoController,
     validarPresupuestoController
 } from '../controllers/presupuesto.controller.js';
@@ -32,6 +34,14 @@ router.get('/evento/:codigo/precarga',
     verifyRoles('ADMIN', 'STAFF'),
     validate(codigoEventoSchema, 'params'),
     obtenerPrecargaPresupuestoController
+);
+
+router.get('/evento/:codigo/vista-previa-cantidad-personas',
+    ...autenticado,
+    verifyRoles('ADMIN', 'STAFF'),
+    validate(codigoEventoSchema, 'params'),
+    validate(vistaPreviaCantidadPersonasSchema, 'query'),
+    obtenerVistaPreviaCantidadPersonasController
 );
 
 router.get('/evento/:codigo',

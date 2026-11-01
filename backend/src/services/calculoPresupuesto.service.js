@@ -9,6 +9,7 @@ export const CATEGORIAS_DETALLE = [
 ];
 
 const PORCENTAJE_PRIMER_ABONO = 0.5;
+export const PORCENTAJE_MARGEN_ARRIENDO = 20;
 const MAX_ENTERO_BD = 2147483647;
 
 function validarEnteroNoNegativo(valor, nombre) {
@@ -38,9 +39,12 @@ function calcularCantidadRequerida(plantilla, cantidadPersonas) {
     return cantidadFija + cantidadVariable;
 }
 
-export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario, codigoEspecialidad, rutTrabajador }) {
+export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario, codigoEspecialidad, rutTrabajador, esArriendoTercero = false }) {
     if (!CATEGORIAS_DETALLE.includes(categoria)) {
         throw new TypeError(`categoria no permitida: ${categoria}`);
+    }
+    if (esArriendoTercero && categoria !== 'EQUIPAMIENTO') {
+        throw new TypeError('Solo las líneas de EQUIPAMIENTO pueden ser arriendo a terceros');
     }
 
     validarEnteroNoNegativo(cantidad, 'cantidad');
@@ -59,24 +63,19 @@ export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario,
         cantidad,
         precioUnitario,
         subtotal,
+        esArriendoTercero,
         ...(codigoEspecialidad !== undefined && codigoEspecialidad !== null ? { codigoEspecialidad } : {}),
         ...(rutTrabajador ? { rutTrabajador } : {})
     };
 }
 
-// TODO: Revisar con la empresa la regla de margen antes de cerrar el presupuesto.
-// Esta aplicación del porcentaje sobre el equipamiento es provisional.
-export function calcularTotales(detalles, porcentajeMargen = 0) {
-    validarEnteroNoNegativo(porcentajeMargen, 'porcentajeMargen');
-    if (porcentajeMargen > 100) {
-        throw new TypeError('porcentajeMargen no puede ser mayor a 100');
-    }
-
+// El margen solo se aplica al costo del equipamiento arrendado a terceros (el subtotal de la línea es el costo).
+export function calcularTotales(detalles) {
     const subtotal = detalles.reduce((suma, detalle) => suma + detalle.subtotal, 0);
     const baseMargen = detalles
-        .filter((detalle) => detalle.categoria === 'EQUIPAMIENTO')
+        .filter((detalle) => detalle.categoria === 'EQUIPAMIENTO' && detalle.esArriendoTercero)
         .reduce((suma, detalle) => suma + detalle.subtotal, 0);
-    const montoMargen = Math.round(baseMargen * porcentajeMargen / 100);
+    const montoMargen = Math.round(baseMargen * PORCENTAJE_MARGEN_ARRIENDO / 100);
     const total = subtotal + montoMargen;
     validarMontoPersistible(total, 'total');
 
@@ -96,8 +95,7 @@ export function calcularCotizacionInicial({
     horasMontajeDesmontaje = 0,
     cantidadPersonas,
     plantillas = [],
-    banqueterias = [],
-    porcentajeMargen = 0
+    banqueterias = []
 }) {
     validarEnteroNoNegativo(horasEvento, 'horasEvento');
     validarEnteroNoNegativo(horasMontajeDesmontaje, 'horasMontajeDesmontaje');
@@ -141,7 +139,8 @@ export function calcularCotizacionInicial({
                 categoria: 'EQUIPAMIENTO',
                 descripcion: `${plantilla.equipo.nombre} (estimado por ${horasTotales} horas)`,
                 cantidad,
-                precioUnitario: tarifaHora * horasTotales
+                precioUnitario: tarifaHora * horasTotales,
+                esArriendoTercero: Boolean(plantilla.equipo.esExterno)
             }));
         } else {
             if (plantilla.especialidad.esPersonalFijo) continue;
@@ -167,12 +166,12 @@ export function calcularCotizacionInicial({
         }));
     }
 
-    const totales = calcularTotales(detalles, porcentajeMargen);
+    const totales = calcularTotales(detalles);
     const primerAbono = calcularPrimerAbono(totales.total);
 
     return {
         horasTotales,
-        porcentajeMargen,
+        porcentajeMargen: PORCENTAJE_MARGEN_ARRIENDO,
         detalles,
         ...totales,
         primerAbono,
