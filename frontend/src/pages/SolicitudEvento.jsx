@@ -4,6 +4,7 @@ import { getCentrosEventoPublicos } from '../services/centroEvento.service';
 import { getBanqueteriasPublicas } from '../services/banqueteria.service';
 import { clienteExisteParaSolicitud } from '../services/cliente.service';
 import { solicitudEvento } from '../services/evento.service';
+import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
 
 // ─── Asignador automático de Íconos ──────────────────────────────────────────
 const getIconForTipo = (nombre = '') => {
@@ -20,6 +21,7 @@ const getIconForTipo = (nombre = '') => {
 };
 
 const DURATION_OPTIONS = ["2 horas", "3 horas", "4 horas", "5 horas", "6 horas", "7 horas", "8+ horas"];
+const MIN_EVENT_DATE = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
 
 const EMPTY_FORM = {
   eventType: "", eventSubtype: "", date: "", timeStart: "", duration: "",
@@ -190,7 +192,7 @@ export default function FormularioSolicitud() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1923] text-[#f0ece4]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0c10] text-[#f0ece4]">
         <div className="text-xl font-medium animate-pulse">Cargando catálogo de opciones...</div>
       </div>
     );
@@ -198,7 +200,7 @@ export default function FormularioSolicitud() {
 
   if (errorMessage) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0f1923]">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0a0c10]">
         <div className="max-w-md w-full p-6 rounded border border-red-500/30 bg-red-500/10 text-center">
           <h2 className="text-xl font-bold text-red-400 mb-2">Error al cargar el formulario</h2>
           <p className="text-sm text-red-200/70 mb-4">{errorMessage}</p>
@@ -215,7 +217,7 @@ export default function FormularioSolicitud() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#0f1923]">
+      <div className="min-h-screen flex flex-col bg-[#0a0c10]">
         <Header />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-xl">
@@ -236,7 +238,7 @@ export default function FormularioSolicitud() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0f1923] text-[#f0ece4]">
+    <div className="min-h-screen flex flex-col bg-[#0a0c10] text-[#f0ece4]">
       <Header />
 
       <div className="flex-1 flex items-start justify-center px-6 py-10 pb-16">
@@ -291,7 +293,7 @@ export default function FormularioSolicitud() {
                   <button
                     disabled={!canNext()}
                     onClick={() => setStep((s) => s + 1)}
-                    className="px-5 py-2.5 bg-[#c9a84c] hover:bg-[#b8973b] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f1923] font-semibold text-xs tracking-wider uppercase rounded transition-colors"
+                    className="px-5 py-2.5 bg-[#c9a84c] hover:bg-[#b8973b] disabled:opacity-40 disabled:cursor-not-allowed text-[#0a0c10] font-semibold text-xs tracking-wider uppercase rounded transition-colors"
                   >
                     Continuar →
                   </button>
@@ -299,11 +301,11 @@ export default function FormularioSolicitud() {
                   <button
                     disabled={!canNext() || submitting}
                     onClick={handleSubmit}
-                    className="px-5 py-2.5 bg-[#c9a84c] hover:bg-[#b8973b] disabled:opacity-40 disabled:cursor-not-allowed text-[#0f1923] font-semibold text-xs tracking-wider uppercase rounded transition-colors flex items-center gap-2"
+                    className="px-5 py-2.5 bg-[#c9a84c] hover:bg-[#b8973b] disabled:opacity-40 disabled:cursor-not-allowed text-[#0a0c10] font-semibold text-xs tracking-wider uppercase rounded transition-colors flex items-center gap-2"
                   >
                     {submitting ? (
                       <>
-                        <span className="w-3 h-3 border-2 border-[#0f1923] border-t-transparent rounded-full animate-spin" />
+                        <span className="w-3 h-3 border-2 border-[#0a0c10] border-t-transparent rounded-full animate-spin" />
                         Enviando...
                       </>
                     ) : (
@@ -323,17 +325,15 @@ export default function FormularioSolicitud() {
 // ─── Header Component ─────────────────────────────────────────────────────────
 function Header() {
   return (
-    <header className="flex items-center justify-between px-8 py-4 border-b border-white/[0.07] bg-[#0f1923]/95 backdrop-blur-md sticky top-0 z-10">
+    <header className="flex items-center justify-between px-8 py-4 border-b border-white/[0.07] bg-[#0a0c10]/95 backdrop-blur-md sticky top-0 z-10">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-[#c9a84c] flex items-center justify-center text-sm font-bold text-[#0f1923] rounded-sm">
-          N
-        </div>
+        <img src={NES_Eventos_Logo} alt="Logo-NES-Eventos" className="h-auto w-20 object-contain sm:w-24"></img>
         <div>
-          <p className="text-base font-semibold text-[#f0ece4] leading-tight">NES Eventos</p>
-          <p className="text-[10px] text-[#f0ece4]/35 tracking-widest uppercase leading-tight">Concepción, Biobío</p>
+          <p className="text-[10px] text-[#f0ece4]/35 tracking-widest uppercase leading-tight">Solo en la</p>
+          <p className="text-[10px] text-[#f0ece4]/35 tracking-widest uppercase leading-tight">Región del Bio-Bío</p>
         </div>
       </div>
-      <div className="text-xs text-[#f0ece4]/35 tracking-wider hidden sm:block">
+      <div className="text-xs text-[#f0ece4]/35 tracking-wider uppercase leading-tight">
         Inscripción de evento
       </div>
     </header>
@@ -355,7 +355,7 @@ function Steps({ current }) {
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
                   done 
-                    ? 'bg-[#c9a84c] text-[#0f1923] border-2 border-[#c9a84c]' 
+                    ? 'bg-[#c9a84c] text-[#0a0c10] border-2 border-[#c9a84c]' 
                     : active 
                     ? 'bg-[#c9a84c]/15 text-[#c9a84c] border-2 border-[#c9a84c]' 
                     : 'bg-transparent text-[#f0ece4]/35 border-2 border-white/15'
@@ -470,9 +470,9 @@ function Step2({ data, set, centrosEvento }) {
           </label>
           <input
             type="date"
-            className="w-full bg-[#131f2c] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors dark:[color-scheme:dark]"
+            className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors dark:[color-scheme:dark]"
             value={data.date}
-            min={new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0]}
+            min={MIN_EVENT_DATE}
             onChange={(e) => set({ date: e.target.value })}
           />
         </div>
@@ -482,7 +482,7 @@ function Step2({ data, set, centrosEvento }) {
           </label>
           <input
             type="time"
-            className="w-full bg-[#131f2c] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors dark:[color-scheme:dark]"
+            className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors dark:[color-scheme:dark]"
             value={data.timeStart}
             onChange={(e) => set({ timeStart: e.target.value })}
           />
@@ -496,13 +496,13 @@ function Step2({ data, set, centrosEvento }) {
           </label>
           <div className="relative">
             <select
-              className="w-full bg-[#131f2c] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
+              className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
               value={data.duration}
               onChange={(e) => set({ duration: e.target.value })}
             >
-              <option value="" className="bg-[#0f1923]">Seleccionar...</option>
+              <option value="" className="bg-[#0a0c10]">Seleccionar...</option>
               {DURATION_OPTIONS.map((d) => (
-                <option key={d} value={d} className="bg-[#0f1923]">{d}</option>
+                <option key={d} value={d} className="bg-[#0a0c10]">{d}</option>
               ))}
             </select>
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c9a84c] pointer-events-none text-xs">▾</span>
@@ -529,25 +529,25 @@ function Step2({ data, set, centrosEvento }) {
         </label>
         <div className="relative">
           <select
-            className={`w-full bg-[#131f2c] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none ${
+            className={`w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none ${
               hasGuests ? "cursor-pointer opacity-100" : "cursor-not-allowed opacity-40"
             }`}
             value={data.venue}
             disabled={!hasGuests}
             onChange={(e) => set({ venue: e.target.value, venueAddress: "" })}
           >
-            <option value="" className="bg-[#0f1923]">
+            <option value="" className="bg-[#0a0c10]">
               {hasGuests ? "Seleccionar recinto..." : "Ingresa primero el N° de invitados"}
             </option>
             {filteredVenues.map((v) => {
               const cap = v.capacidad || v.capacidadMax;
               return (
-                <option key={v.codigo} value={v.codigo} className="bg-[#0f1923]">
+                <option key={v.codigo} value={v.codigo} className="bg-[#0a0c10]">
                   {v.nombre} {cap ? `— hasta ${cap.toLocaleString("es-CL")} personas` : ''}
                 </option>
               );
             })}
-            <option value="custom" className="bg-[#0f1923]">Detállanos un recinto si ya tienes uno elegido</option>
+            <option value="custom" className="bg-[#0a0c10]">Detállanos un recinto si ya tienes uno elegido</option>
           </select>
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c9a84c] pointer-events-none text-xs">▾</span>
         </div>
@@ -588,13 +588,13 @@ function Step3({ data, set, banqueterias }) {
         </label>
         <div className="relative">
           <select
-            className="w-full bg-[#131f2c] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
+            className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
             value={data.menu}
             onChange={(e) => set({ menu: e.target.value })}
           >
-            <option value="" className="bg-[#0f1923]">Seleccionar banquetería o menú...</option>
+            <option value="" className="bg-[#0a0c10]">Seleccionar banquetería o menú...</option>
             {banqueterias.map((b) => (
-              <option key={b.codigo} value={b.codigo} className="bg-[#0f1923]">
+              <option key={b.codigo} value={b.codigo} className="bg-[#0a0c10]">
                 {b.nombre}
               </option>
             ))}

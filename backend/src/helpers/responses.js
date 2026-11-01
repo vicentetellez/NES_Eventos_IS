@@ -32,5 +32,7 @@ export class AppError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.name = "AppError"; // Para identificarlo en el middleware
+    console.error("AppError creado:", message);
+    console.error("Status code:", statusCode);
   }
 }

@@ -3,6 +3,10 @@ import dotenv from 'dotenv';
 import argon2 from 'argon2';
 import { fileURLToPath } from "url";
 
+function parseBoolean(value) {
+    return value === 'true';
+}
+
 // Configuración para que sepa dónde estan las variables de entorno
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
@@ -17,6 +21,10 @@ if (!NODE_ENV) {
 export const PORT = process.env.PORT;
 if (!PORT) {
     throw new Error("PORT is not defined");
+}
+export const COOKIE_SECURE = parseBoolean(process.env.COOKIE_SECURE)
+if (COOKIE_SECURE && NODE_ENV !== 'production') {
+    throw new Error("COOKIE_SECURE cannot be true when NODE_ENV is not production");
 }
 // DATABASE
 export const DATABASE_URL = process.env.DATABASE_URL;

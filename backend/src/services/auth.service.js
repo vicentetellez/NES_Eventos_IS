@@ -4,19 +4,18 @@ import prisma from '../config/prisma.js';
 import { JWT_SECRET } from "../config/configEnv.js";
 import { AppError } from "../helpers/responses.js";
 
-export async function me(rut){
-    const user = await prisma.usuario.findUnique({ 
+export async function me(rut) {
+    const user = await prisma.usuario.findUnique({
+        where: { rut },
         select: { 
-            rut: true, 
             rol: true, 
             debeCambiarPassword: true,
             ultimoAcceso: true,
-            fechaRegistro: true
-
-        }, 
-        where: { rut } 
+            fechaRegistro: true,
+            persona: true
+        }
     });
-    return (user);
+    return user;
 }
 
 export async function loginService(data){

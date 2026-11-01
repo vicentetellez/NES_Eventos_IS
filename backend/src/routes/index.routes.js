@@ -10,6 +10,8 @@ import calendarioEventoRoutes from './calendarioEvento.routes.js';
 import clienteRoutes from './cliente.routes.js';
 import presupuestoRoutes from './presupuesto.routes.js';
 import asignacionTrabajadorRoutes from './asignacionTrabajador.routes.js';
+import evaluacionEventoRoutes from './evaluacionEvento.routes.js';
+import evaluacionTrabajadorRoutes from './evaluacionTrabajador.routes.js';
 
 const router = Router();
 
@@ -24,5 +26,7 @@ router.use('/trabajador', trabajadorRoutes);
 router.use('/calendario-evento', calendarioEventoRoutes);
 router.use('/cliente', clienteRoutes);
 router.use('/presupuestos', presupuestoRoutes);
+router.use('/evaluacion-evento', evaluacionEventoRoutes);
+router.use('/evaluacion-trabajador', evaluacionTrabajadorRoutes);
 
 export default router;

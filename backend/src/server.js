@@ -1,6 +1,18 @@
 import app from './app.js';
 import { PORT } from './config/configEnv.js';
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function bootstrap(){
+    try {
+        await prisma.$connect();
+        console.log('Conexion a la base de datos exitosa.');
+
+        app.listen(PORT, () => {
+            console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Error al conectar a la base de datos o iniciar el servidor:', error);
+        process.exit(1);
+    }
+}
+
+bootstrap();

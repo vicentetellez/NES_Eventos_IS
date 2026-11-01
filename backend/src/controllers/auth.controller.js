@@ -1,4 +1,4 @@
-import { NODE_ENV } from '../config/configEnv.js';
+import { COOKIE_SECURE } from '../config/configEnv.js';
 import { response } from '../helpers/responses.js';
 import { 
     me,
@@ -20,7 +20,7 @@ export const loginController = async (req, res, next) => {
         const result = await loginService(req.body);
         res.cookie('access_token', result.token,
                     {   httpOnly: true,
-                        secure: NODE_ENV === 'production', // Es true en producción si se usa HTTPS
+                        secure: COOKIE_SECURE,
                         sameSite: 'lax', 
                         maxAge: 3600000 
                     });
@@ -35,7 +35,7 @@ export const logoutController = async (req, res, next) => {
         res.clearCookie('access_token', 
                     { 
                         httpOnly: true, 
-                        secure: NODE_ENV === 'production', // Es a true en producción si se usa HTTPS
+                        secure: COOKIE_SECURE,
                         sameSite: 'lax' 
                     });
         response.success(res, 200, 'Logout exitoso');
