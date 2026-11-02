@@ -1,14 +1,52 @@
 import { response } from '../helpers/responses.js';
 import {
     actualizarPresupuesto,
+    ajustarEventoYPresupuesto,
     crearPresupuesto,
     enviarPresupuestoAValidacion,
+    listarPresupuestos,
     obtenerPrecargaPresupuesto,
     obtenerPresupuesto,
     obtenerVistaPreviaCantidadPersonas,
     rechazarPresupuesto,
     validarPresupuesto
 } from '../services/presupuesto.service.js';
+import { generarPdfSegundoAbono } from '../services/presupuestoPdf.service.js';
+
+export async function descargarPdfSegundoAbonoController(req, res, next) {
+    try {
+        const { codigo } = req.validatedParams;
+        const { buffer, nombreArchivo } = await generarPdfSegundoAbono(codigo);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${nombreArchivo}"`,
+            'Content-Length': buffer.length
+        });
+        res.status(200).send(buffer);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function listarPresupuestosController(req, res, next) {
+    try {
+        const { estado } = req.validatedQuery;
+        const resultado = await listarPresupuestos(estado);
+        response.success(res, 200, 'Presupuestos obtenidos correctamente', resultado);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function ajustarEventoYPresupuestoController(req, res, next) {
+    try {
+        const { codigo } = req.validatedParams;
+        const resultado = await ajustarEventoYPresupuesto(codigo, req.body);
+        response.success(res, 200, 'Evento y presupuesto actualizados correctamente', resultado);
+    } catch (error) {
+        next(error);
+    }
+}
 
 export async function obtenerVistaPreviaCantidadPersonasController(req, res, next) {
     try {

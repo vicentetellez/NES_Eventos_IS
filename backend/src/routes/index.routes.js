@@ -9,7 +9,6 @@ import trabajadorRoutes from './trabajador.routes.js';
 import calendarioEventoRoutes from './calendarioEvento.routes.js';
 import clienteRoutes from './cliente.routes.js';
 import presupuestoRoutes from './presupuesto.routes.js';
-import asignacionTrabajadorRoutes from './asignacionTrabajador.routes.js';
 import evaluacionEventoRoutes from './evaluacionEvento.routes.js';
 import evaluacionTrabajadorRoutes from './evaluacionTrabajador.routes.js';
 
@@ -21,7 +20,6 @@ router.use('/tipo-evento', tipoEventoRoutes);
 router.use('/centro-evento', centroEventoRoutes);
 router.use('/banqueteria', banqueteriaRoutes);
 router.use('/evento', eventoRoutes);
-router.use('/evento', asignacionTrabajadorRoutes);
 router.use('/trabajador', trabajadorRoutes);
 router.use('/calendario-evento', calendarioEventoRoutes);
 router.use('/cliente', clienteRoutes);

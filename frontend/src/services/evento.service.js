@@ -17,6 +17,16 @@ export const getEventosPorEstado = async (estado) => {
   }
 };
 
+export const avanzarEstadoEvento = async (codigoEvento, payload) => {
+  try {
+    const { data } = await api.patch(`/evento/${codigoEvento}/avanzar-estado`, payload);
+    return data;
+  } catch (error) {
+    const mensajeError = error.response?.data?.message || 'Error al cambiar el estado del evento';
+    throw new Error(mensajeError, { cause: error });
+  }
+};
+
 export const solicitudEvento = async (payload) => {
   try {
     const { data } = await api.post('/evento/solicitud', payload);

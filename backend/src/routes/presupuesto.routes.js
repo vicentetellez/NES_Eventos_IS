@@ -9,14 +9,19 @@ import { validate } from '../middlewares/validate.middlewares.js';
 import { codigoEventoSchema } from '../schemas/evento.schema.js';
 import {
     actualizarPresupuestoSchema,
+    ajustarEventoSchema,
     crearPresupuestoSchema,
+    listarPresupuestosSchema,
     rechazarPresupuestoSchema,
     vistaPreviaCantidadPersonasSchema
 } from '../schemas/presupuesto.schema.js';
 import {
     actualizarPresupuestoController,
+    ajustarEventoYPresupuestoController,
     crearPresupuestoController,
+    descargarPdfSegundoAbonoController,
     enviarPresupuestoAValidacionController,
+    listarPresupuestosController,
     obtenerPrecargaPresupuestoController,
     obtenerPresupuestoController,
     obtenerVistaPreviaCantidadPersonasController,
@@ -29,6 +34,13 @@ const router = Router();
 const autenticado = [authenticateJwt, blockIfPasswordChangeRequired, blockIfNotActive];
 
 // verifyRoles('STAFF') también habilita al GERENTE (hereda lo que puede hacer el staff)
+router.get('/',
+    ...autenticado,
+    verifyRoles('ADMIN', 'STAFF'),
+    validate(listarPresupuestosSchema, 'query'),
+    listarPresupuestosController
+);
+
 router.get('/evento/:codigo/precarga',
     ...autenticado,
     verifyRoles('ADMIN', 'STAFF'),
@@ -42,6 +54,13 @@ router.get('/evento/:codigo/vista-previa-cantidad-personas',
     validate(codigoEventoSchema, 'params'),
     validate(vistaPreviaCantidadPersonasSchema, 'query'),
     obtenerVistaPreviaCantidadPersonasController
+);
+
+router.get('/evento/:codigo/pdf-segundo-abono',
+    ...autenticado,
+    verifyRoles('ADMIN', 'STAFF'),
+    validate(codigoEventoSchema, 'params'),
+    descargarPdfSegundoAbonoController
 );
 
 router.get('/evento/:codigo',
@@ -65,6 +84,14 @@ router.put('/evento/:codigo',
     validate(codigoEventoSchema, 'params'),
     validate(actualizarPresupuestoSchema),
     actualizarPresupuestoController
+);
+
+router.patch('/evento/:codigo/ajustar-evento',
+    ...autenticado,
+    verifyRoles('ADMIN', 'STAFF'),
+    validate(codigoEventoSchema, 'params'),
+    validate(ajustarEventoSchema),
+    ajustarEventoYPresupuestoController
 );
 
 router.patch('/evento/:codigo/enviar-validacion',
