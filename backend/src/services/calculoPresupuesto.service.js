@@ -5,8 +5,13 @@ export const CATEGORIAS_DETALLE = [
     'TRANSPORTE',
     'BANQUETERIA',
     'DECORACION',
-    'OTRO'
+    'OTRO',
+    'AJUSTE_EVENTO'
 ];
+
+// AJUSTE_EVENTO lo genera solo el sistema (cobro extra por aumentar invitados u horas después del primer abono)
+export const CATEGORIA_AJUSTE_EVENTO = 'AJUSTE_EVENTO';
+export const CATEGORIAS_EDITABLES = CATEGORIAS_DETALLE.filter((categoria) => categoria !== CATEGORIA_AJUSTE_EVENTO);
 
 const PORCENTAJE_PRIMER_ABONO = 0.5;
 export const PORCENTAJE_MARGEN_ARRIENDO = 20;

@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js';
 import {
+    CATEGORIA_AJUSTE_EVENTO,
     PORCENTAJE_MARGEN_ARRIENDO,
     calcularCotizacionInicial,
     calcularPrimerAbono,
@@ -9,6 +10,8 @@ import {
 } from './calculoPresupuesto.service.js';
 
 const ESTADOS_EVENTO_EDITABLES = ['COTIZANDO', 'ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
+// Tras el primer abono, el aumento de invitados u horas se cobra en el segundo abono
+const ESTADOS_EVENTO_AJUSTABLES = ['ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
 
 // Los errores de validación del cálculo son TypeError: se informan como 422
 async function ejecutarCalculo(funcionCalculo) {
@@ -62,12 +65,45 @@ async function obtenerEventoOError(codigoEvento, cliente = prisma) {
 async function obtenerPresupuestoDeEventoOError(codigoEvento, cliente = prisma) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigoEvento },
-        include: { detalles: true, evento: true }
+        include: { detalles: true, evento: { include: { cliente: { include: { persona: true } } } } }
     });
     if (!presupuesto) {
         throw new AppError(`El evento ${codigoEvento} aún no tiene presupuesto`, 404);
     }
     return presupuesto;
+}
+
+function resumirEvento(evento) {
+    return {
+        codigo: evento.codigo,
+        estado: evento.estado,
+        fechaEvento: evento.fechaEvento,
+        horasEvento: evento.horasEvento,
+        horasMontajeDesmontaje: evento.horasMontajeDesmontaje ?? 0,
+        cantidadPersonas: evento.cantidadPersonas,
+        fechaLimiteAbono: evento.fechaLimiteAbono ?? null,
+        montoAbono: evento.montoAbono ?? null,
+        clienteNombre: evento.cliente?.persona?.nombre ?? null
+    };
+}
+
+// Listado para las bandejas del staff y del gerente (p. ej. presupuestos pendientes de validación)
+export async function listarPresupuestos(estado) {
+    const presupuestos = await prisma.presupuesto.findMany({
+        where: estado ? { estado } : undefined,
+        include: { evento: { include: { cliente: { include: { persona: true } } } } },
+        orderBy: { codigo: 'desc' }
+    });
+
+    return {
+        presupuestos: presupuestos.map((presupuesto) => ({
+            codigo: presupuesto.codigo,
+            codigoEvento: presupuesto.codigoEvento,
+            estado: presupuesto.estado,
+            total: presupuesto.total,
+            evento: resumirEvento(presupuesto.evento)
+        }))
+    };
 }
 
 // Recalcula y guarda el total del presupuesto a partir de sus líneas. Debe llamarse en cada cambio de líneas.
@@ -96,7 +132,8 @@ export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasS
                     plantillas: { include: { equipo: true, especialidad: true } }
                 }
             },
-            banqueterias: { include: { banqueteria: true } }
+            banqueterias: { include: { banqueteria: true } },
+            cliente: { include: { persona: true } }
         }
     });
 
@@ -119,7 +156,10 @@ export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasS
     }));
 
     return {
-        evento: { codigo: evento.codigo, estado: evento.estado, cantidadPersonas: cantidadPersonasSimulada ?? evento.cantidadPersonas },
+        evento: {
+            ...resumirEvento(evento),
+            cantidadPersonas: cantidadPersonasSimulada ?? evento.cantidadPersonas
+        },
         tipoEvento: evento.tipoEvento
             ? { codigo: evento.tipoEvento.codigo, nombre: evento.tipoEvento.nombre }
             : null,
@@ -129,11 +169,14 @@ export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasS
 
 export async function obtenerPresupuesto(codigoEvento) {
     const presupuesto = await obtenerPresupuestoDeEventoOError(codigoEvento);
-    return { presupuesto: formatearPresupuesto(presupuesto, presupuesto.evento) };
+    return {
+        presupuesto: formatearPresupuesto(presupuesto, presupuesto.evento),
+        evento: resumirEvento(presupuesto.evento)
+    };
 }
 
-// Vista previa del presupuesto si cambia la cantidad de invitados. No guarda nada: el staff revisa la propuesta,
-// actualiza la cantidad en el evento y aplica las líneas con la edición normal del presupuesto.
+// Vista previa del costo estimado con otra cantidad de invitados. No guarda nada.
+// El cambio real y su cobro adicional se aplican con ajustarEventoYPresupuesto.
 // La banquetería no se recalcula (se edita aparte) y las líneas manuales y de externos asignados no se consideran.
 export async function obtenerVistaPreviaCantidadPersonas(codigoEvento, cantidadPersonas) {
     const presupuesto = await obtenerPresupuestoDeEventoOError(codigoEvento);
@@ -150,6 +193,107 @@ export async function obtenerVistaPreviaCantidadPersonas(codigoEvento, cantidadP
         presupuestoActual: formatearPresupuesto(presupuesto, presupuesto.evento),
         propuesta: cotizacion
     };
+}
+
+function calcularCostoEstimadoEvento(evento, { cantidadPersonas, horasEvento, horasMontajeDesmontaje }) {
+    return ejecutarCalculo(() => calcularCotizacionInicial({
+        tipoEvento: evento.tipoEvento
+            ? { tarifaHoraBaseReferencial: evento.tipoEvento.tarifaHoraBaseReferencial }
+            : null,
+        horasEvento,
+        horasMontajeDesmontaje,
+        cantidadPersonas,
+        plantillas: evento.tipoEvento?.plantillas ?? []
+    }));
+}
+
+// Cambia invitados y/o horas del evento y actualiza el presupuesto en la misma transacción.
+// Solo se permite aumentar (no hay devoluciones). La diferencia de costo se agrega como una línea AJUSTE_EVENTO
+// y se cobra en el segundo abono: saldoPendiente = total - montoAbono. No requiere nueva validación del gerente.
+// La banquetería no participa (se edita aparte).
+export async function ajustarEventoYPresupuesto(codigoEvento, cambios) {
+    return prisma.$transaction(async (tx) => {
+        const existente = await obtenerPresupuestoDeEventoOError(codigoEvento, tx);
+
+        if (!ESTADOS_EVENTO_AJUSTABLES.includes(existente.evento.estado)) {
+            throw new AppError(
+                `Los cambios de invitados u horas con cobro adicional solo se permiten en ${ESTADOS_EVENTO_AJUSTABLES.join(' o ')} (estado actual: ${existente.evento.estado})`,
+                409
+            );
+        }
+        if (existente.estado === 'PENDIENTE_VALIDACION') {
+            throw new AppError('El presupuesto está pendiente de validación del gerente y no se puede modificar', 409);
+        }
+
+        const evento = await tx.evento.findUnique({
+            where: { codigo: codigoEvento },
+            include: {
+                tipoEvento: { include: { plantillas: { include: { equipo: true, especialidad: true } } } }
+            }
+        });
+
+        const actual = {
+            cantidadPersonas: evento.cantidadPersonas,
+            horasEvento: evento.horasEvento,
+            horasMontajeDesmontaje: evento.horasMontajeDesmontaje ?? 0
+        };
+        const nuevo = { ...actual, ...cambios };
+
+        for (const campo of Object.keys(actual)) {
+            if (nuevo[campo] < actual[campo]) {
+                throw new AppError(`No se permite reducir ${campo} (actual: ${actual[campo]}). Solo se pueden aumentar`, 409);
+            }
+        }
+        if (Object.keys(actual).every((campo) => nuevo[campo] === actual[campo])) {
+            throw new AppError('Los valores enviados no aumentan invitados ni horas del evento', 409);
+        }
+
+        const costoActual = await calcularCostoEstimadoEvento(evento, actual);
+        const costoNuevo = await calcularCostoEstimadoEvento(evento, nuevo);
+        const diferencia = costoNuevo.total - costoActual.total;
+
+        await tx.evento.update({
+            where: { codigo: codigoEvento },
+            data: {
+                cantidadPersonas: nuevo.cantidadPersonas,
+                horasEvento: nuevo.horasEvento,
+                horasMontajeDesmontaje: nuevo.horasMontajeDesmontaje
+            }
+        });
+
+        if (diferencia > 0) {
+            const partes = [];
+            if (nuevo.cantidadPersonas !== actual.cantidadPersonas) {
+                partes.push(`${actual.cantidadPersonas} invitados -> ${nuevo.cantidadPersonas} invitados`);
+            }
+            if (nuevo.horasEvento !== actual.horasEvento) {
+                partes.push(`${actual.horasEvento} horas de duración -> ${nuevo.horasEvento} horas de duración`);
+            }
+            if (nuevo.horasMontajeDesmontaje !== actual.horasMontajeDesmontaje) {
+                partes.push(`${actual.horasMontajeDesmontaje} horas de montaje/desmontaje -> ${nuevo.horasMontajeDesmontaje} horas de montaje/desmontaje`);
+            }
+
+            const detalle = await ejecutarCalculo(() => crearDetalle({
+                categoria: CATEGORIA_AJUSTE_EVENTO,
+                descripcion: `Ajuste por cambio del evento: ${partes.join('; ')}`,
+                cantidad: 1,
+                precioUnitario: diferencia
+            }));
+            await tx.detallePresupuesto.create({
+                data: { ...detalle, codigoPresupuesto: existente.codigo }
+            });
+        }
+
+        const actualizado = await recalcularTotalPresupuesto(tx, existente.codigo, {
+            ...(existente.estado === 'RECHAZADO' ? { estado: 'BORRADOR' } : {})
+        });
+        const eventoActualizado = await tx.evento.findUnique({ where: { codigo: codigoEvento } });
+
+        return {
+            montoAjuste: Math.max(diferencia, 0),
+            presupuesto: formatearPresupuesto(actualizado, eventoActualizado)
+        };
+    });
 }
 
 export async function crearPresupuesto(codigoEvento, { detalles }) {
@@ -201,7 +345,11 @@ export async function actualizarPresupuesto(codigoEvento, { detalles }) {
         if (detalles !== undefined) {
             const detallesCalculados = await ejecutarCalculo(() => detalles.map(crearDetalle));
             await tx.detallePresupuesto.deleteMany({
-                where: { codigoPresupuesto: existente.codigo, rutTrabajador: null }
+                where: {
+                    codigoPresupuesto: existente.codigo,
+                    rutTrabajador: null,
+                    categoria: { not: CATEGORIA_AJUSTE_EVENTO }
+                }
             });
             await tx.detallePresupuesto.createMany({
                 data: detallesCalculados.map((detalle) => ({ ...detalle, codigoPresupuesto: existente.codigo }))
