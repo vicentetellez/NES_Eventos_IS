@@ -7,7 +7,7 @@ import Home from './pages/Home'
 import Error404 from './pages/Error404'
 import Login from './pages/Login'
 import FormularioSolicitud from './pages/SolicitudEvento.jsx'
-//import FormularioEvaluacion from './pages/EvaluarEvento.jsx'
+import FormularioEvaluacion from './pages/resenaEvento.jsx'
 // Privadas (Con sidebar y JWT)
 import CalendarioEvento from './pages/Calendario.jsx'
 import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
@@ -37,12 +37,12 @@ const router = createBrowserRouter([
         path: 'solicitud-evento',
         element: <FormularioSolicitud />,
       },
-      // {
-      //   path: 'evaluar-evento',
-      //   element: <FormularioEvaluacion />,
-      // },
+        {
+          path: 'evaluar-evento',
+          element: <FormularioEvaluacion />,
+        },
       {
-        path: 'calendario-evento',
+          path: 'panel/eventos',
         element: <CalendarioEvento />,
       },
       {
