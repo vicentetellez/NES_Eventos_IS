@@ -23,11 +23,25 @@ const getIconForTipo = (nombre = '') => {
 const DURATION_OPTIONS = ["2 horas", "3 horas", "4 horas", "5 horas", "6 horas", "7 horas", "8+ horas"];
 const MIN_EVENT_DATE = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
 
+// Comunas de la Región del Biobío (códigos según semilla de la base de datos)
+const COMUNAS_BIOBIO = [
+  [167, "Alto Biobío"], [168, "Los Ángeles"], [169, "Cabrero"], [170, "Tucapel"],
+  [171, "Antuco"], [172, "Quilleco"], [173, "Santa Bárbara"], [174, "Quilaco"],
+  [175, "Mulchén"], [176, "Negrete"], [177, "Nacimiento"], [178, "Laja"],
+  [179, "San Rosendo"], [180, "Yumbel"], [181, "Concepción"], [182, "Talcahuano"],
+  [183, "Penco"], [184, "Tomé"], [185, "Florida"], [186, "Hualpén"],
+  [187, "Hualqui"], [188, "Santa Juana"], [189, "Lota"], [190, "Coronel"],
+  [191, "San Pedro de la Paz"], [192, "Chiguayante"], [193, "Lebu"], [194, "Arauco"],
+  [195, "Curanilahue"], [196, "Los Álamos"], [197, "Cañete"], [198, "Contulmo"],
+  [199, "Tiruá"],
+];
+
 const EMPTY_FORM = {
   eventType: "", eventSubtype: "", date: "", timeStart: "", duration: "",
-  guests: "", venue: "", venueAddress: "", menu: "", allergies: "",
-  alcohol: "", audiovisual: "", decoration: "", notes: "",
-  name: "", email: "", phone: "", rut: "", terms: false,
+  guests: "", venue: "", venueAddress: "", menus: [], allergies: "",
+  alcohol: "", notes: "",
+  name: "", firstLastName: "", secondLastName: "", email: "", phone: "", comuna: "",
+  rut: "", terms: false,
 };
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
@@ -82,7 +96,7 @@ export default function FormularioSolicitud() {
     if (step === 4) {
       if (!form.rut || !form.terms) return false;
       if (isExistingClient) return true;
-      return !!(form.name && form.email && form.phone);
+      return !!(form.name && form.firstLastName && form.email && form.phone && form.comuna);
     }
     return false;
   };
@@ -127,14 +141,8 @@ export default function FormularioSolicitud() {
         datosEventoNuevo.comentariosAlcohol = form.alcohol.trim();
       }
 
-      // Consolidar comentarios adicionales
-      const extras = [];
-      if (form.audiovisual) extras.push(`Audiovisual: ${form.audiovisual}`);
-      if (form.decoration) extras.push(`Decoración: ${form.decoration}`);
-      if (form.notes && form.notes.trim()) extras.push(form.notes.trim());
-
-      if (extras.length > 0) {
-        datosEventoNuevo.comentariosAdicionales = extras.join(" | ");
+      if (form.notes && form.notes.trim()) {
+        datosEventoNuevo.comentariosAdicionales = form.notes.trim();
       }
 
       // 2. Objeto eventoData
@@ -145,28 +153,29 @@ export default function FormularioSolicitud() {
 
       // Si es cliente nuevo, construir datosClienteNuevo
       if (!isExistingClient) {
-        const partesNombre = form.name.trim().split(" ");
-        const nombre = partesNombre[0] || "Cliente";
-        const primerApellido = partesNombre[1] || "SinApellido";
-        const segundoApellido = partesNombre.slice(2).join(" ");
-
         eventoData.datosClienteNuevo = {
-          nombre,
-          primerApellido,
-          ...(segundoApellido ? { segundoApellido } : {}),
+          nombre: form.name.trim(),
+          primerApellido: form.firstLastName.trim(),
+          ...(form.secondLastName.trim() ? { segundoApellido: form.secondLastName.trim() } : {}),
           telefono: form.phone.trim(),
           email: form.email.trim(),
+          codigoComuna: Number(form.comuna),
         };
       }
 
-      // 3. Array de banqueterias
-      const listaBanqueterias = [];
-      if (form.menu) {
-        listaBanqueterias.push({
-          codigoBanquete: Number(form.menu),
-          cantidadRequerida: cantidadPersonas,
+      // 3. Array de banqueterias (sin duplicados; la PK compuesta del backend los rechazaría)
+      const seen = new Set();
+      const listaBanqueterias = form.menus
+        .filter((m) => m.codigoBanquete && m.cantidadRequerida)
+        .map((m) => ({
+          codigoBanquete: Number(m.codigoBanquete),
+          cantidadRequerida: parseInt(m.cantidadRequerida, 10),
+        }))
+        .filter((m) => {
+          if (seen.has(m.codigoBanquete)) return false;
+          seen.add(m.codigoBanquete);
+          return true;
         });
-      }
 
       // Payload Final
       const payload = {
@@ -453,9 +462,17 @@ function Step2({ data, set, centrosEvento }) {
   const hasGuests = guestCount > 0;
 
   const filteredVenues = centrosEvento.filter((c) => {
-    const cap = c.capacidad || c.capacidadMax || 9999;
-    return cap >= guestCount;
+    const cap = c.capacidadPersonas;
+    return cap == null || cap >= guestCount;
   });
+
+  const handleGuestsChange = (value) => {
+    const n = parseInt(value, 10) || 0;
+    const selected = centrosEvento.find((c) => String(c.codigo) === String(data.venue));
+    const cap = selected?.capacidadPersonas;
+    const resetVenue = selected && cap != null && n > cap ? { venue: "", venueAddress: "" } : {};
+    set({ guests: value, ...resetVenue });
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -518,7 +535,7 @@ function Step2({ data, set, centrosEvento }) {
             placeholder="Ej: 80"
             min={1}
             value={data.guests}
-            onChange={(e) => set({ guests: e.target.value })}
+            onChange={(e) => handleGuestsChange(e.target.value)}
           />
         </div>
       </div>
@@ -540,7 +557,7 @@ function Step2({ data, set, centrosEvento }) {
               {hasGuests ? "Seleccionar recinto..." : "Ingresa primero el N° de invitados"}
             </option>
             {filteredVenues.map((v) => {
-              const cap = v.capacidad || v.capacidadMax;
+              const cap = v.capacidadPersonas;
               return (
                 <option key={v.codigo} value={v.codigo} className="bg-[#0a0c10]">
                   {v.nombre} {cap ? `— hasta ${cap.toLocaleString("es-CL")} personas` : ''}
@@ -572,8 +589,20 @@ function Step2({ data, set, centrosEvento }) {
 
 // ─── Step 3 ──────────────────────────────────────────────────────────────────
 function Step3({ data, set, banqueterias }) {
-  const toggle = (field, val) => {
-    set({ [field]: data[field] === val ? "" : val });
+  const selectedCodes = data.menus.map((m) => String(m.codigoBanquete)).filter(Boolean);
+  const allSelected = banqueterias.length > 0 && selectedCodes.length >= banqueterias.length;
+
+  const addMenu = () => {
+    if (allSelected) return;
+    set({ menus: [...data.menus, { codigoBanquete: "", cantidadRequerida: "" }] });
+  };
+
+  const updateMenu = (index, partial) => {
+    set({ menus: data.menus.map((m, i) => (i === index ? { ...m, ...partial } : m)) });
+  };
+
+  const removeMenu = (index) => {
+    set({ menus: data.menus.filter((_, i) => i !== index) });
   };
 
   return (
@@ -584,22 +613,73 @@ function Step3({ data, set, banqueterias }) {
 
       <div>
         <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
-          Tipo de menú / servicio gastronómico
+          Tipos de menú / banquetería
         </label>
-        <div className="relative">
-          <select
-            className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
-            value={data.menu}
-            onChange={(e) => set({ menu: e.target.value })}
+        <div className="flex flex-col gap-3">
+          {data.menus.map((m, i) => {
+            const selectedBanqueteria = banqueterias.find((b) => String(b.codigo) === String(m.codigoBanquete));
+            return (
+              <div key={i} className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <select
+                        className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
+                        value={m.codigoBanquete}
+                        onChange={(e) => updateMenu(i, { codigoBanquete: e.target.value })}
+                      >
+                        <option value="" className="bg-[#0a0c10]">Seleccionar banquetería o menú...</option>
+                        {banqueterias.map((b) => {
+                          const alreadySelected = selectedCodes.includes(String(b.codigo)) && String(m.codigoBanquete) !== String(b.codigo);
+                          return (
+                            <option key={b.codigo} value={b.codigo} className="bg-[#0a0c10]" disabled={alreadySelected}>
+                              {b.nombre}{alreadySelected ? ' (ya seleccionado)' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c9a84c] pointer-events-none text-xs">▾</span>
+                    </div>
+                  </div>
+                  <div className="sm:w-36">
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                      placeholder="N° personas"
+                      value={m.cantidadRequerida}
+                      onChange={(e) => updateMenu(i, { cantidadRequerida: e.target.value })}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMenu(i)}
+                    className="px-3 py-2.5 border border-red-500/30 text-red-400/80 hover:bg-red-500/10 text-xs font-semibold rounded transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                {selectedBanqueteria && (
+                  <p className="text-xs text-[#f0ece4]/50 leading-relaxed pl-1">
+                    {selectedBanqueteria.descripcion}
+                    {selectedBanqueteria.precioPersonaReferencial != null && (
+                      <span className="text-[#c9a84c]/80">
+                        {` — $${Number(selectedBanqueteria.precioPersonaReferencial).toLocaleString("es-CL")} por persona (referencial)`}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={addMenu}
+            disabled={allSelected}
+            className="self-start px-4 py-2 border border-[#c9a84c]/40 text-[#c9a84c] hover:bg-[#c9a84c]/10 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold uppercase tracking-wider rounded transition-colors"
           >
-            <option value="" className="bg-[#0a0c10]">Seleccionar banquetería o menú...</option>
-            {banqueterias.map((b) => (
-              <option key={b.codigo} value={b.codigo} className="bg-[#0a0c10]">
-                {b.nombre}
-              </option>
-            ))}
-          </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c9a84c] pointer-events-none text-xs">▾</span>
+            + Agregar otro menú
+          </button>
         </div>
       </div>
 
@@ -615,37 +695,16 @@ function Step3({ data, set, banqueterias }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          { field: "alcohol", label: "Servicio de alcohol", opts: ["Sí, incluir", "No incluir"] },
-          { field: "audiovisual", label: "Equipos audiovisuales", opts: ["Sí, incluir", "No necesito"] },
-          { field: "decoration", label: "Decoración temática", opts: ["Sí, incluir", "Solo lo básico"] },
-        ].map(({ field, label, opts }) => (
-          <div key={field}>
-            <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
-              {label}
-            </label>
-            <div className="flex gap-2">
-              {opts.map((opt) => {
-                const active = data[field] === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => toggle(field, opt)}
-                    className={`flex-1 py-2 px-2 border text-xs font-medium rounded-sm transition-all text-center ${
-                      active
-                        ? "border-[#c9a84c] bg-[#c9a84c]/15 text-[#c9a84c]"
-                        : "border-white/12 bg-white/[0.03] text-[#f0ece4]/50 hover:border-white/25"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <div>
+        <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
+          Servicio de alcohol
+        </label>
+        <input
+          className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
+          placeholder="Ej: barra libre 2 horas, solo vinos y espumante, sin alcohol..."
+          value={data.alcohol}
+          onChange={(e) => set({ alcohol: e.target.value })}
+        />
       </div>
 
       <div>
@@ -700,8 +759,16 @@ function Step4({ data, set, tiposEvento, centrosEvento, banqueterias, isExisting
     ? (data.venueAddress || "Recinto propio") 
     : (centroSel ? centroSel.nombre : "—");
 
-  const menuSel = banqueterias.find((b) => String(b.codigo) === String(data.menu));
-  const menuLabel = menuSel ? menuSel.nombre : "—";
+  const menuLabel = data.menus.length > 0
+    ? data.menus
+        .filter((m) => m.codigoBanquete)
+        .map((m) => {
+          const b = banqueterias.find((x) => String(x.codigo) === String(m.codigoBanquete));
+          return b ? `${b.nombre} (${m.cantidadRequerida || "?"} pers.)` : null;
+        })
+        .filter(Boolean)
+        .join(", ") || "—"
+    : "—";
 
   return (
     <div className="flex flex-col gap-5">
@@ -741,15 +808,41 @@ function Step4({ data, set, tiposEvento, centrosEvento, banqueterias, isExisting
         </div>
       ) : (
         <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
+                Nombre *
+              </label>
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                placeholder="Tu nombre"
+                value={data.name}
+                onChange={(e) => set({ name: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
+                Primer apellido *
+              </label>
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
+                placeholder="Tu primer apellido"
+                value={data.firstLastName}
+                onChange={(e) => set({ firstLastName: e.target.value })}
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
-              Nombre completo *
+              Segundo apellido
             </label>
             <input
               className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
-              placeholder="Tu nombre y apellido"
-              value={data.name}
-              onChange={(e) => set({ name: e.target.value })}
+              placeholder="Opcional"
+              value={data.secondLastName}
+              onChange={(e) => set({ secondLastName: e.target.value })}
             />
           </div>
 
@@ -774,10 +867,31 @@ function Step4({ data, set, tiposEvento, centrosEvento, banqueterias, isExisting
               <input
                 type="tel"
                 className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
-                placeholder="+56 9 XXXX XXXX"
+                placeholder="Ej: 912345678"
                 value={data.phone}
                 onChange={(e) => set({ phone: e.target.value })}
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
+              Comuna *
+            </label>
+            <div className="relative">
+              <select
+                className="w-full bg-[#131622] border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] focus:outline-none focus:border-[#c9a84c] transition-colors appearance-none cursor-pointer"
+                value={data.comuna}
+                onChange={(e) => set({ comuna: e.target.value })}
+              >
+                <option value="" className="bg-[#0a0c10]">Seleccionar comuna...</option>
+                {COMUNAS_BIOBIO.map(([codigo, nombre]) => (
+                  <option key={codigo} value={codigo} className="bg-[#0a0c10]">
+                    {nombre}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c9a84c] pointer-events-none text-xs">▾</span>
             </div>
           </div>
         </>
