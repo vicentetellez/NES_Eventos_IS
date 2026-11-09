@@ -964,6 +964,69 @@ async function seedPersonalTrabajadores(){
     }
 }
 
+async function seedParticipacionesEventos() {
+    const asignaciones = [
+        { codigoEvaluacion: 'EV-9S0T1U', estado: 'FINALIZADO', especialidades: ['Iluminador', 'Garzon'] },
+        { codigoEvaluacion: 'EV-3M4N5O', estado: 'PENDIENTE_PAGO_FINAL', especialidades: ['Tecnico de sonido', 'Conductor/Auxiliar'] },
+        { codigoEvaluacion: 'EV-6P7Q8R', estado: 'EN_PREPARACION', especialidades: ['Electrico', 'Personal de apoyo'] }
+    ];
+
+    try {
+        for (const asignacion of asignaciones) {
+            const evento = await prisma.evento.findUnique({
+                where: { codigoEvaluacion: asignacion.codigoEvaluacion }
+            });
+            if (!evento || evento.estado !== asignacion.estado) continue;
+
+            const minutosTrabajador = (
+                evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)
+            ) * 60;
+
+            for (const nombreEspecialidad of asignacion.especialidades) {
+                const especialidad = await prisma.especialidad.findUnique({
+                    where: { nombre: nombreEspecialidad }
+                });
+                if (!especialidad) {
+                    throw new Error(`No se encontró la especialidad "${nombreEspecialidad}"`);
+                }
+
+                const trabajador = await prisma.trabajadorTieneEspecialidad.findFirst({
+                    where: {
+                        codigoEspecialidad: especialidad.codigo,
+                        trabajador: { is: { activo: true, esExterno: false } }
+                    },
+                    orderBy: { rutTrabajador: 'asc' },
+                    select: { rutTrabajador: true }
+                });
+                if (!trabajador) {
+                    throw new Error(`No hay un trabajador interno activo para "${nombreEspecialidad}"`);
+                }
+
+                await prisma.trabajadorParticipaEvento.upsert({
+                    where: {
+                        rutTrabajador_codigoEspecialidad_codigoEvento: {
+                            rutTrabajador: trabajador.rutTrabajador,
+                            codigoEspecialidad: especialidad.codigo,
+                            codigoEvento: evento.codigo
+                        }
+                    },
+                    update: { minutosTrabajador, tarifaHoraAcordada: 0 },
+                    create: {
+                        rutTrabajador: trabajador.rutTrabajador,
+                        codigoEspecialidad: especialidad.codigo,
+                        codigoEvento: evento.codigo,
+                        minutosTrabajador,
+                        tarifaHoraAcordada: 0
+                    }
+                });
+            }
+        }
+        console.log('Participaciones de trabajadores de eventos de prueba sembradas correctamente.');
+    } catch (error) {
+        console.error('Error al sembrar participaciones de trabajadores:', error);
+    }
+}
+
 
 
 
@@ -984,6 +1047,7 @@ async function main(){
     await seedCatalogosPresupuesto();
     await seedGerente();
     await seedPersonalTrabajadores();
+    await seedParticipacionesEventos();
 }
 
 main()
