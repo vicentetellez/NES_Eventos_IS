@@ -6,6 +6,7 @@ import Home from './pages/Home'
 // Publicas (Sin sidebar)
 import Error404 from './pages/Error404'
 import Login from './pages/Login'
+import Landing from './pages/Landing.jsx'
 import FormularioSolicitud from './pages/SolicitudEvento.jsx'
 import FormularioEvaluacion from './pages/resenaEvento.jsx'
 // Privadas (Con sidebar y JWT)
@@ -31,11 +32,15 @@ const router = createBrowserRouter([
     children: [
       { 
         index: true, 
-        element: <Navigate to="/login" replace /> 
+        element: <Navigate to="/landing" replace /> 
       },
       {
         path: 'login',
         element: <Login />,
+      },
+      {
+        path: 'landing',
+        element: <Landing />,
       },
       {
         path: 'home',
