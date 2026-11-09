@@ -1,91 +1,10 @@
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import menuConfig from '../menuConfig';
 
 export default function Home() {
-  const { user } = useAuth(); // p. ej. { nombre: "Carlos", rol: "GERENTE" }
-  const roleCards = {
-    STAFF: [
-        {
-        title: 'Eventos y Calendario',
-        text: 'Visualiza la agenda de eventos, elabora presupuestos iniciales y confirma pagos de abonos.',
-        to: '/panel/eventos',
-        icon: '📅',
-        },
-        {
-        title: 'Presupuestos',
-        text: 'Elabora los presupuestos de los eventos en cotización, envíalos a validación y gestiona los ajustes posteriores al abono.',
-        to: '/panel/presupuestos',
-        icon: '🧾',
-        },
-        {
-        title: 'Asignar Personal y Equipos',
-        text: 'Consulta el ranking de evaluaciones para seleccionar y asignar trabajadores a los eventos confirmados.',
-        to: '/panel/trabajadores',
-        icon: '🏆',
-        },
-        {
-        title: 'Mi Perfil',
-        text: 'Revisa tus datos personales y actualiza tus credenciales de acceso al sistema.',
-        to: '/panel/mi-perfil',
-        icon: '👤',
-        },
-    ],
-
-    GERENTE: [
-        {
-        title: 'Aprobar Presupuestos',
-        text: 'Revisa las cotizaciones generadas por el Staff para aprobarlas o rechazarlas antes de enviarlas al cliente.',
-        to: '/panel/validacion-presupuestos',
-        icon: '📑',
-        },
-        {
-        title: 'Gestionar Catálogos',
-        text: 'Administra la disponibilidad de centros de evento, servicios de banquetería y tipos de celebración.',
-        to: '/panel/catalogos',
-        icon: '🗂️',
-        },
-        {
-        title: 'Registro de Trabajadores',
-        text: 'Ingresa nuevos trabajadores con su foto de perfil y monitorea el historial de calificaciones.',
-        to: '/panel/trabajadores',
-        icon: '👥',
-        },
-        {
-        title: 'Mi Perfil',
-        text: 'Gestión de cuenta y ajustes de credenciales institucionales.',
-        to: '/panel/mi-perfil',
-        icon: '👤',
-        },
-    ],
-
-    ADMIN: [
-        {
-        title: 'Gestión de Usuarios',
-        text: 'Administra las cuentas del personal interno (Staff, Gerentes y Administradores).',
-        to: '/panel/usuarios',
-        icon: '🔑',
-        },
-        {
-        title: 'Control de Eventos',
-        text: 'Supervisión completa sobre las solicitudes, presupuestos, estados y asignaciones globales.',
-        to: '/panel/eventos',
-        icon: '📅',
-        },
-        {
-        title: 'Gestión de Catálogos',
-        text: 'Crea, edita o desactiva recintos, tipos de eventos y servicios gastronómicos.',
-        to: '/panel/catalogos',
-        icon: '🗂️',
-        },
-        {
-        title: 'Administrar Trabajadores',
-        text: 'Control total de la dotación de personal, fotos y métricas de desempeño.',
-        to: '/panel/trabajadores',
-        icon: '👥',
-        },
-    ],
-    };
-  const cards = roleCards[user.rol] || [];
+  const { user } = useAuth();
+  const cards = menuConfig[user.rol] || [];
 
   return (
     <div className="min-h-screen bg-[#0a0c10] px-4 py-8 text-[#f0ece4] sm:px-8 lg:px-10">
@@ -105,9 +24,9 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {cards.map((card, idx) => (
+          {cards.map((card) => (
             <Link
-              key={idx}
+              key={card.to}
               to={card.to}
               className="group flex min-h-56 flex-col justify-between rounded-xl border border-white/10 bg-[#131622] p-6 shadow-lg shadow-black/10 transition duration-200 hover:-translate-y-1 hover:border-[#c9a84c]/50 hover:bg-[#171b29] focus:outline-none focus:ring-2 focus:ring-[#c9a84c]"
             >
