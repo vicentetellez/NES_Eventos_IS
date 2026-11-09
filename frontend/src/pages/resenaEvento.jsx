@@ -8,6 +8,7 @@ import {
   createEvaluacionesTrabajadores,
   getTrabajadoresParaEvaluacion,
 } from '../services/evaluacionTrabajador.service.js';
+import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
 
 const PREGUNTAS_EVENTO = [
   { campo: 'calidadPuntualidad', texto: '¿El evento comenzó y se desarrolló puntualmente?' },
@@ -99,7 +100,7 @@ export default function ResenaEvento() {
     setError('');
     try {
       const respuestasPositivas = PREGUNTAS_EVENTO.filter(({ campo }) => respuestasEvento[campo]).length;
-      const puntajeTotal = Number(((respuestasPositivas / PREGUNTAS_EVENTO.length) * 100).toFixed(2));
+      const puntajeTotal = Number(((respuestasPositivas / PREGUNTAS_EVENTO.length) * 5).toFixed(2));
       const evaluacionesTrabajadores = especialidades.flatMap((especialidad) =>
         especialidad.trabajadores.map((trabajador) => {
           const respuesta = respuestasTrabajadores[`${especialidad.codigo}:${trabajador.rut}`];
@@ -107,7 +108,7 @@ export default function ResenaEvento() {
           return {
             calificacion: evaluacionManual
               ? respuesta.calificacion
-              : Number((puntajeTotal / 20).toFixed(2)),
+              : puntajeTotal,
             esAutogenerado: !evaluacionManual,
             ...(evaluacionManual && respuesta.comentarioEspecifico?.trim()
               ? { comentarioEspecifico: respuesta.comentarioEspecifico.trim() }
@@ -153,8 +154,7 @@ export default function ResenaEvento() {
     return (
       <main className="flex min-h-screen flex-col items-center bg-[#0a0c10] px-4 py-10 text-[#f0ece4] sm:justify-center">
         <header className="mb-9 flex items-center gap-3 text-sm tracking-[0.24em]">
-          <span className="grid size-10 place-items-center border border-[#c9a84c]/70 font-serif text-xl text-[#c9a84c]">N</span>
-          <span>NES <strong className="font-bold">EVENTOS</strong></span>
+          <img src={NES_Eventos_Logo} alt="NES Eventos" className="h-auto w-40 object-contain" />
         </header>
         <section className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#131622] p-7 shadow-2xl shadow-black/30 sm:p-11">
           <p className="mb-3 text-xs font-bold tracking-[0.22em] text-[#c9a84c]">TU OPINIÓN IMPORTA</p>
