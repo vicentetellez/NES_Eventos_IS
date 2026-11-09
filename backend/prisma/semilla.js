@@ -726,7 +726,12 @@ async function seedCatalogosPresupuesto(){
     const categorias = [
         { nombre: 'Audio' },
         { nombre: 'Iluminacion' },
-        { nombre: 'Escenario' }
+        { nombre: 'Escenario' },
+        { nombre: 'Estructuras' },
+        { nombre: 'Energia' },
+        { nombre: 'Mobiliario' },
+        { nombre: 'Servicios sanitarios' },
+        { nombre: 'Herramientas' }
     ];
 
     const categoriasCreadas = {};
@@ -739,25 +744,110 @@ async function seedCatalogosPresupuesto(){
     }
 
     const equipos = [
-        { nombre: 'Parlante activo', categoria: 'Audio', stockTotal: 20, arriendoHoraReferencial: 12000 },
-        { nombre: 'Consola de sonido', categoria: 'Audio', stockTotal: 4, arriendoHoraReferencial: 25000 },
-        { nombre: 'Pantalla LED', categoria: 'Iluminacion', stockTotal: 3, arriendoHoraReferencial: 90000 }
+        { nombre: 'Juegos de escenarios modulares', categoria: 'Escenario', stockTotal: 2 },
+        { nombre: 'Carpas y toldos', categoria: 'Estructuras', stockTotal: 3 },
+        { nombre: 'Generadores eléctricos', categoria: 'Energia', stockTotal: 3 },
+        { nombre: 'Sistemas de sonido completos', categoria: 'Audio', stockTotal: 2 },
+        { nombre: 'Consolas digitales', categoria: 'Audio', stockTotal: 2 },
+        { nombre: 'Unidades de microfonía', categoria: 'Audio', stockTotal: 12 },
+        { nombre: 'Unidades de iluminación (cabezas móviles y PAR LED)', categoria: 'Iluminacion', stockTotal: 20 },
+        { nombre: 'Pantallas LED', categoria: 'Iluminacion', stockTotal: 2 },
+        { nombre: 'Mesas', categoria: 'Mobiliario', stockTotal: 50 },
+        { nombre: 'Sillas', categoria: 'Mobiliario', stockTotal: 200 },
+        { nombre: 'Taburetes', categoria: 'Mobiliario', stockTotal: 30 },
+        { nombre: 'Proyectores', categoria: 'Iluminacion', stockTotal: 3 },
+        { nombre: 'Baños químicos', categoria: 'Servicios sanitarios', stockTotal: 4 },
+        { nombre: 'Kits de herramientas básicas', categoria: 'Herramientas', stockTotal: 3 }
     ];
 
     const equiposCreados = {};
     for (const equipo of equipos) {
         equiposCreados[equipo.nombre] = await prisma.equipo.upsert({
             where: { nombre: equipo.nombre },
-            update: {},
+            update: {
+                esExterno: false,
+                stockTotal: equipo.stockTotal,
+                arriendoHoraReferencial: null,
+                codigoCategoria: categoriasCreadas[equipo.categoria].codigo
+            },
             create: {
                 nombre: equipo.nombre,
                 esExterno: false,
                 stockTotal: equipo.stockTotal,
                 stockNoDisponible: 0,
-                arriendoHoraReferencial: equipo.arriendoHoraReferencial,
+                arriendoHoraReferencial: null,
                 codigoCategoria: categoriasCreadas[equipo.categoria].codigo
             }
         });
+    }
+
+    const equiposRetirados = [
+        {
+            nombreAnterior: 'Parlante activo',
+            nombreNuevo: 'Sistemas de sonido completos',
+            cantidadFija: 2,
+            ratioInvitados: 0
+        },
+        {
+            nombreAnterior: 'Consola de sonido',
+            nombreNuevo: 'Consolas digitales',
+            cantidadFija: 2,
+            ratioInvitados: 0
+        },
+        {
+            nombreAnterior: 'Pantalla LED',
+            nombreNuevo: 'Pantallas LED',
+            cantidadFija: 1,
+            ratioInvitados: 0
+        }
+    ];
+    for (const equipoRetirado of equiposRetirados) {
+        const anterior = await prisma.equipo.findUnique({ where: { nombre: equipoRetirado.nombreAnterior } });
+        if (!anterior) continue;
+
+        const reemplazo = equiposCreados[equipoRetirado.nombreNuevo];
+        const plantillasAnteriores = await prisma.plantilla.findMany({
+            where: { codigoEquipo: anterior.codigo }
+        });
+        for (const plantilla of plantillasAnteriores) {
+            const plantillaReemplazo = await prisma.plantilla.findFirst({
+                where: {
+                    codigoTipoEvento: plantilla.codigoTipoEvento,
+                    codigoEquipo: reemplazo.codigo,
+                    codigoEspecialidad: plantilla.codigoEspecialidad
+                }
+            });
+            if (plantillaReemplazo) {
+                await prisma.plantilla.delete({ where: { codigo: plantilla.codigo } });
+            } else {
+                await prisma.plantilla.update({
+                    where: { codigo: plantilla.codigo },
+                    data: {
+                        codigoEquipo: reemplazo.codigo,
+                        cantidadFija: equipoRetirado.cantidadFija,
+                        ratioInvitados: equipoRetirado.ratioInvitados
+                    }
+                });
+            }
+        }
+
+        const [asignaciones, detallesPresupuesto] = await Promise.all([
+            prisma.eventoUtilizaEquipo.count({ where: { codigoEquipo: anterior.codigo } }),
+            prisma.detallePresupuesto.count({ where: { codigoEquipo: anterior.codigo } })
+        ]);
+        if (asignaciones === 0 && detallesPresupuesto === 0) {
+            await prisma.equipo.delete({ where: { codigo: anterior.codigo } });
+        } else {
+            await prisma.equipo.update({
+                where: { codigo: anterior.codigo },
+                data: {
+                    nombre: `${equipoRetirado.nombreAnterior} (inventario anterior)`,
+                    stockTotal: 0,
+                    stockNoDisponible: 0,
+                    arriendoHoraReferencial: null
+                }
+            });
+        }
     }
 
     const especialidades = [
@@ -781,11 +871,11 @@ async function seedCatalogosPresupuesto(){
     }
 
     const plantillas = [
-        { tipo: 'Conciertos', equipo: 'Parlante activo', cantidadFija: 4, ratioInvitados: 100 },
+        { tipo: 'Conciertos', equipo: 'Sistemas de sonido completos', cantidadFija: 2, ratioInvitados: 0 },
         { tipo: 'Conciertos', especialidad: 'Tecnico de sonido', cantidadFija: 2, ratioInvitados: 200 },
-        { tipo: 'Matrimonios', equipo: 'Parlante activo', cantidadFija: 2, ratioInvitados: 0 },
+        { tipo: 'Matrimonios', equipo: 'Sistemas de sonido completos', cantidadFija: 1, ratioInvitados: 0 },
         { tipo: 'Matrimonios', especialidad: 'Garzon', cantidadFija: 0, ratioInvitados: 20 },
-        { tipo: 'Seminarios', equipo: 'Pantalla LED', cantidadFija: 1, ratioInvitados: 0 },
+        { tipo: 'Seminarios', equipo: 'Pantallas LED', cantidadFija: 1, ratioInvitados: 0 },
         { tipo: 'Seminarios', especialidad: 'Tecnico de sonido', cantidadFija: 1, ratioInvitados: 250 }
     ];
 
@@ -812,7 +902,7 @@ async function seedCatalogosPresupuesto(){
         }
     }
 
-    console.log('Catalogos de presupuesto de prueba sembrados (valores demostrativos).');
+    console.log('Inventario de equipos y plantillas sembrado correctamente.');
 }
 
 function calcularDigitoVerificador(cuerpo) {
@@ -886,13 +976,13 @@ async function seedPersonalTrabajadores(){
         'Morales', 'Rodríguez', 'López', 'Fuentes', 'Hernández', 'Torres', 'Araya', 'Flores', 'Espinoza', 'Valenzuela'];
 
     const especialidadesPersonal = [
-        { nombre: 'Jefe de Operaciones y Logistica', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 1100000, externos: 0 },
-        { nombre: 'Ejecutivo de Produccion y Comercial', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 2, sueldo: 900000, externos: 0 },
+        { nombre: 'Jefe de Operaciones y Logistica', tarifaHoraReferencial: 25000, esPersonalFijo: true, internos: 1, sueldo: 1100000, externos: 0 },
+        { nombre: 'Ejecutivo de Produccion y Comercial', tarifaHoraReferencial: 18000, esPersonalFijo: true, internos: 2, sueldo: 900000, externos: 0 },
         { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000, esPersonalFijo: true, internos: 1, sueldo: 850000, externos: 1 },
-        { nombre: 'Iluminador', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 800000, externos: 0 },
-        { nombre: 'Electrico', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 750000, externos: 0 },
-        { nombre: 'Encargado de bodega', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 1, sueldo: 700000, externos: 0 },
-        { nombre: 'Conductor/Auxiliar', tarifaHoraReferencial: 0, esPersonalFijo: true, internos: 2, sueldo: 650000, externos: 0 },
+        { nombre: 'Iluminador', tarifaHoraReferencial: 12000, esPersonalFijo: true, internos: 1, sueldo: 800000, externos: 0 },
+        { nombre: 'Electrico', tarifaHoraReferencial: 12000, esPersonalFijo: true, internos: 1, sueldo: 750000, externos: 0 },
+        { nombre: 'Encargado de bodega', tarifaHoraReferencial: 9000, esPersonalFijo: true, internos: 1, sueldo: 700000, externos: 0 },
+        { nombre: 'Conductor/Auxiliar', tarifaHoraReferencial: 10000, esPersonalFijo: true, internos: 2, sueldo: 650000, externos: 0 },
         { nombre: 'Garzon', tarifaHoraReferencial: 8000, esPersonalFijo: false, internos: 3, sueldo: 520000, externos: 4 },
         { nombre: 'DJ', tarifaHoraReferencial: 20000, esPersonalFijo: false, internos: 2, sueldo: 600000, externos: 1 },
         { nombre: 'Animador / Maestro de ceremonia', tarifaHoraReferencial: 25000, esPersonalFijo: false, internos: 0, sueldo: null, externos: 2 },
@@ -904,20 +994,21 @@ async function seedPersonalTrabajadores(){
     let indice = 0;
     let trabajadoresProcesados = 0;
 
-    const asegurarTrabajador = async (codigoEspecialidad, esExterno, sueldo) => {
+    const asegurarTrabajador = async (codigoEspecialidad, esExterno, sueldo, cohorte = 0) => {
         indice += 1;
-        const rut = crearRutDemo(30000000 + indice);
+        const indiceTrabajador = indice + cohorte * 1000;
+        const rut = crearRutDemo(30000000 + indiceTrabajador);
         await prisma.persona.upsert({
             where: { rut },
             update: {},
             create: {
                 rut,
-                nombre: nombres[indice % nombres.length],
-                primerApellido: apellidos[(indice * 7) % apellidos.length],
-                segundoApellido: apellidos[(indice * 3 + 5) % apellidos.length],
-                fechaNacimiento: new Date(`${1980 + (indice % 20)}-0${1 + (indice % 9)}-15`),
-                telefono: String(970000000 + indice),
-                email: `trabajador${indice}@neseventos.example`,
+                nombre: nombres[indiceTrabajador % nombres.length],
+                primerApellido: apellidos[(indiceTrabajador * 7) % apellidos.length],
+                segundoApellido: apellidos[(indiceTrabajador * 3 + 5) % apellidos.length],
+                fechaNacimiento: new Date(`${1980 + (indiceTrabajador % 20)}-0${1 + (indiceTrabajador % 9)}-15`),
+                telefono: String(970000000 + indiceTrabajador),
+                email: `trabajador${indiceTrabajador}@neseventos.example`,
                 codigoComuna: 181
             }
         });
@@ -928,7 +1019,7 @@ async function seedPersonalTrabajadores(){
                 rut,
                 esExterno,
                 sueldo: esExterno ? null : sueldo,
-                aniosExperiencia: 1 + (indice % 12)
+                aniosExperiencia: 1 + (indiceTrabajador % 12)
             }
         });
         await prisma.trabajadorTieneEspecialidad.upsert({
@@ -943,7 +1034,10 @@ async function seedPersonalTrabajadores(){
         for (const item of especialidadesPersonal) {
             const especialidad = await prisma.especialidad.upsert({
                 where: { nombre: item.nombre },
-                update: { esPersonalFijo: item.esPersonalFijo },
+                update: {
+                    tarifaHoraReferencial: item.tarifaHoraReferencial,
+                    esPersonalFijo: item.esPersonalFijo
+                },
                 create: {
                     nombre: item.nombre,
                     tarifaHoraReferencial: item.tarifaHoraReferencial,
@@ -956,6 +1050,16 @@ async function seedPersonalTrabajadores(){
             }
             for (let i = 0; i < item.externos; i++) {
                 await asegurarTrabajador(especialidad.codigo, true, null);
+            }
+        }
+
+        for (const item of especialidadesPersonal) {
+            const especialidad = await prisma.especialidad.findUnique({ where: { nombre: item.nombre } });
+            for (let i = 0; i < item.internos; i++) {
+                await asegurarTrabajador(especialidad.codigo, false, item.sueldo, 1);
+            }
+            for (let i = 0; i < item.externos; i++) {
+                await asegurarTrabajador(especialidad.codigo, true, null, 1);
             }
         }
         console.log(`Personal interno y externo de prueba sembrado (${trabajadoresProcesados} trabajadores demostrativos).`);

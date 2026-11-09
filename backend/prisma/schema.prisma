@@ -158,6 +158,7 @@ model Equipo {
   categoria               Categoria             @relation(fields: [codigoCategoria], references: [codigo])
   plantillas              Plantilla[]
   eventosEquipo           EventoUtilizaEquipo[]
+  detallesPresupuesto     DetallePresupuesto[]
 
   @@map("equipo")
 }
@@ -277,9 +278,11 @@ model Evento {
 }
 
 model EventoUtilizaEquipo {
-  codigoEquipo  Int     @map("codigo_equipo")
-  codigoEvento  Int     @map("codigo_evento")
-  cantidadUsada Int     @map("cantidad_usada")
+  codigoEquipo          Int     @map("codigo_equipo")
+  codigoEvento          Int     @map("codigo_evento")
+  cantidadUsada         Int     @map("cantidad_usada")
+  precioUnitarioAcordado Int    @default(0) @map("precio_unitario_acordado")
+  montoCobrado          Int     @default(0) @map("monto_cobrado")
 
   equipo        Equipo  @relation(fields: [codigoEquipo], references: [codigo])
   evento        Evento  @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
@@ -347,10 +350,13 @@ model DetallePresupuesto {
   // AL ASIGNAR/QUITAR TRABAJADORES EXTERNOS DEL EVENTO
   codigoEspecialidad Int?       @map("codigo_especialidad")
   rutTrabajador     String?     @map("rut_trabajador") @db.VarChar(12)
+  codigoEquipo      Int?        @map("codigo_equipo")
   codigoPresupuesto Int         @map("codigo_presupuesto")
 
   presupuesto       Presupuesto @relation(fields: [codigoPresupuesto], references: [codigo], onDelete: Cascade)
+  equipo            Equipo?     @relation(fields: [codigoEquipo], references: [codigo], onDelete: SetNull)
 
+  @@index([codigoEquipo])
   @@map("detalle_presupuesto")
 }
 
