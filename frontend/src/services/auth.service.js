@@ -24,6 +24,14 @@ export const me = async () => {
   }
 };
 
+export const changeOwnPassword = async ({ currentPassword, newPassword }) => {
+  try {
+    await api.patch('/usuario/me/password', { currentPassword, newPassword });
+  } catch (error) {
+    throw createAuthError(error, 'Error al cambiar la contraseña');
+  }
+};
+
 export const logout = async () => {
   try {
     await api.post('/auth/logout');
