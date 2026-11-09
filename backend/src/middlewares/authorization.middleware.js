@@ -1,6 +1,7 @@
 import { AppError } from '../helpers/responses.js';
 import prisma from '../config/prisma.js';
 
+// El GERENTE hereda todo lo que puede hacer un STAFF
 export function verifyRoles(...rolesPermitidos) {
     return (req, res, next) => {
         try {
@@ -9,7 +10,8 @@ export function verifyRoles(...rolesPermitidos) {
                 return next(new AppError("Token invalido o expirado", 401));
             }
 
-            if (!rolesPermitidos.includes(userRole)) {
+            const heredaPermisosStaff = userRole === 'GERENTE' && rolesPermitidos.includes('STAFF');
+            if (!rolesPermitidos.includes(userRole) && !heredaPermisosStaff) {
                 const validRolesNames = rolesPermitidos.join(", ");
                 return next(new AppError(`Acceso denegado: se necesitan privilegios de ${validRolesNames}`, 403));
             }

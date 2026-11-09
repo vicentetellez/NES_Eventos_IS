@@ -25,3 +25,17 @@ export const createEvaluacionEvento = async (evaluacionEventoData) => {
     throw new Error(mensajeError);
   }
 };
+
+export const getResenasEventos = async () => {
+  try {
+    const { data } = await api.get('/evaluacion-evento/resenas');
+    const resenas = data?.data?.resenas;
+    if (!Array.isArray(resenas)) {
+      throw new Error('El servidor no entregó las reseñas de eventos.');
+    }
+    return resenas;
+  } catch (error) {
+    const mensajeError = error.response?.data?.message || error.message || 'Error al obtener las reseñas de eventos';
+    throw new Error(mensajeError);
+  }
+};

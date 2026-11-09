@@ -166,6 +166,9 @@ model Especialidad {
   codigo            Int                           @id @default(autoincrement()) @map("codigo")
   nombre            String                        @unique @db.VarChar(200)
   tarifaHoraReferencial Int                       @default(0) @map("tarifa_hora_referencial")
+  // SI ES TRUE, EL PERSONAL ES INTERNO (SUELDO FIJO) Y SU COSTO YA ESTA CUBIERTO POR LA TARIFA BASE DEL EVENTO,
+  // POR LO QUE NO SE COBRA POR HORA EN EL PRESUPUESTO
+  esPersonalFijo    Boolean                       @default(false) @map("es_personal_fijo")
   // DETERMINA SI LA ESPECIALIDAD VA A SALIR EN LA EVALUACION DE TRABAJADORES
   esEvaluable       Boolean                       @default(true) @map("es_evaluable")
 
@@ -266,7 +269,7 @@ model Evento {
   equipos                  EventoUtilizaEquipo[]
   banqueterias             EventoTieneBanqueteria[]
   participaciones          TrabajadorParticipaEvento[]
-  presupuestos             Presupuesto[]
+  presupuesto              Presupuesto?
   evaluacionEvento         EvaluacionEvento?
   evaluacionesTrabajadores EvaluacionTrabajador[]
 
@@ -314,13 +317,16 @@ model TrabajadorParticipaEvento {
 
 model Presupuesto {
   codigo                           Int                  @id @default(autoincrement()) @map("codigo")
-  estado                           String               @db.VarChar(100)
+  // BORRADOR | PENDIENTE_VALIDACION | VALIDADO | RECHAZADO
+  estado                           String               @default("BORRADOR") @db.VarChar(100)
   fechaDictamen                    DateTime?            @map("fecha_dictamen") @db.Timestamptz(3)
+  observacionDictamen              String?              @map("observacion_dictamen") @db.Text
   tarifaHoraBase                   Int                  @map("tarifa_hora_base")
-  porcentajeBeneficioEquipoExterno Int?                 @map("porcentaje_beneficio_equipo_externo")
+  // INCLUYE EL MARGEN FIJO (20%) SOBRE LAS LINEAS DE EQUIPAMIENTO ARRENDADO A TERCEROS (esArriendoTercero).
+  // SI SE EDITA DESPUES DEL PRIMER ABONO, EL SALDO PENDIENTE ES total - evento.montoAbono
   total                            Int
   rutUsuarioDictamen               String?              @map("rut_usuario_dictamen") @db.VarChar(12)
-  codigoEvento                     Int                  @map("codigo_evento")
+  codigoEvento                     Int                  @unique @map("codigo_evento")
 
   usuarioDictamen                  Usuario?             @relation(fields: [rutUsuarioDictamen], references: [rut])
   evento                           Evento               @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
@@ -336,6 +342,11 @@ model DetallePresupuesto {
   cantidad          Int
   precioUnitario    Int         @map("precio_unitario") 
   subtotal          Int   
+  // SOLO PARA CATEGORIA EQUIPAMIENTO: EL COSTO (subtotal) ES DE UN ARRIENDO A TERCERO Y LLEVA MARGEN
+  esArriendoTercero Boolean     @default(false) @map("es_arriendo_tercero")  // REFERENCIAS OPCIONALES PARA LAS LINEAS DE PERSONAL. SI rutTrabajador TIENE VALOR, LA LINEA LA ADMINISTRA EL SISTEMA
+  // AL ASIGNAR/QUITAR TRABAJADORES EXTERNOS DEL EVENTO
+  codigoEspecialidad Int?       @map("codigo_especialidad")
+  rutTrabajador     String?     @map("rut_trabajador") @db.VarChar(12)
   codigoPresupuesto Int         @map("codigo_presupuesto")
 
   presupuesto       Presupuesto @relation(fields: [codigoPresupuesto], references: [codigo], onDelete: Cascade)

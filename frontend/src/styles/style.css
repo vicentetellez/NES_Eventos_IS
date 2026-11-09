@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+.sidebar-menu-scrollbar {
+  scrollbar-color: #292d3a transparent;
+  scrollbar-width: thin;
+}
+
+.sidebar-menu-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-menu-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-menu-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: #292d3a;
+}
+
+.sidebar-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #3a3f50;
+}

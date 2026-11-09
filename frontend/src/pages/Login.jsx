@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
 
@@ -32,7 +32,13 @@ function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0a0c10] px-4 py-10 text-[#f0ece4]">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#0a0c10] px-4 py-10 text-[#f0ece4]">
+      <Link
+        to="/evaluar-evento"
+        className="absolute right-4 top-4 inline-flex items-center justify-center rounded-lg border border-[#c9a84c]/40 bg-[#c9a84c]/10 px-4 py-2.5 text-sm font-semibold text-[#c9a84c] transition hover:bg-[#c9a84c]/20 focus:outline-none focus:ring-2 focus:ring-[#c9a84c] sm:right-6 sm:top-6"
+      >
+        Reseña evento
+      </Link>
       <section className="w-full max-w-md rounded-2xl border border-white/10 bg-[#131622] p-7 shadow-2xl shadow-black/40 sm:p-10">
         <div className="mb-8 text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#c9a84c]">

@@ -32,7 +32,7 @@ export const createEvaluacionEventoSchema = z.object({
                 required_error: 'El puntaje total es obligatorio'
             })
             .min(0, 'El puntaje total no puede ser negativo')
-            .max(99.99, 'El puntaje total no puede exceder 99.99'),
+            .max(5, 'El puntaje total no puede exceder 5'),
         comentarioAdicional: z.string().optional(),
         codigoEvento: z
             .number({

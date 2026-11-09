@@ -12,6 +12,12 @@ export default function Home() {
         icon: '📅',
         },
         {
+        title: 'Presupuestos',
+        text: 'Elabora los presupuestos de los eventos en cotización, envíalos a validación y gestiona los ajustes posteriores al abono.',
+        to: '/panel/presupuestos',
+        icon: '🧾',
+        },
+        {
         title: 'Asignar Personal y Equipos',
         text: 'Consulta el ranking de evaluaciones para seleccionar y asignar trabajadores a los eventos confirmados.',
         to: '/panel/trabajadores',
@@ -29,7 +35,7 @@ export default function Home() {
         {
         title: 'Aprobar Presupuestos',
         text: 'Revisa las cotizaciones generadas por el Staff para aprobarlas o rechazarlas antes de enviarlas al cliente.',
-        to: '/panel/eventos',
+        to: '/panel/validacion-presupuestos',
         icon: '📑',
         },
         {
@@ -37,6 +43,12 @@ export default function Home() {
         text: 'Administra la disponibilidad de centros de evento, servicios de banquetería y tipos de celebración.',
         to: '/panel/catalogos',
         icon: '🗂️',
+        },
+        {
+        title: 'Reseñas de Eventos',
+        text: 'Consulta las reseñas de clientes y las evaluaciones de los trabajadores participantes.',
+        to: '/panel/resenas-eventos',
+        icon: '📝',
         },
         {
         title: 'Registro de Trabajadores',
