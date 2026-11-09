@@ -27,6 +27,16 @@ export const avanzarEstadoEvento = async (codigoEvento, payload) => {
   }
 };
 
+export const getEstadisticasPublicas = async () => {
+  try {
+    const { data } = await api.get('/evento/estadisticas-publicas');
+    return data.data;
+  } catch (error) {
+    const mensajeError = error.response?.data?.message || 'Error al obtener las estadísticas';
+    throw new Error(mensajeError, { cause: error });
+  }
+};
+
 export const solicitudEvento = async (payload) => {
   try {
     const { data } = await api.post('/evento/solicitud', payload);
