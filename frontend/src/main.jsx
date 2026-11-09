@@ -13,6 +13,11 @@ import CalendarioEvento from './pages/Calendario.jsx'
 import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
 import PanelCatalogo from './pages/PanelCatalogo.jsx'
 
+import Presupuestos from './pages/Presupuestos.jsx'
+import PresupuestoEvento from './pages/PresupuestoEvento.jsx'
+import ValidacionPresupuestos from './pages/ValidacionPresupuestos.jsx'
+import EventosOrganizando from './pages/EventosOrganizando.jsx'
+
 import './styles/style.css'
 
 const router = createBrowserRouter([
@@ -52,6 +57,22 @@ const router = createBrowserRouter([
       {
         path: 'panel/catalogos',
         element: <PanelCatalogo />,
+      },
+      {
+        path: 'panel/presupuestos',
+        element: <Presupuestos />,
+      },
+      {
+        path: 'panel/presupuestos/:codigo',
+        element: <PresupuestoEvento />,
+      },
+      {
+        path: 'panel/validacion-presupuestos',
+        element: <ValidacionPresupuestos />,
+      },
+      {
+        path: 'panel/eventos-organizando',
+        element: <EventosOrganizando />,
       },
       {
         path: '*',

@@ -35,8 +35,7 @@ export const avanzarEstadoEventoSchema = z.object({
     ], {
         errorMap: () => ({ message: 'El estado destino no es válido.' })
     }),
-    fechaLimiteAbono: z.coerce.date().optional(),
-    montoAbono: z.coerce.number().int().positive().optional()
+    fechaLimiteAbono: z.coerce.date().optional()
 }).strict().superRefine((datos, context) => {
     if (datos.estadoDestino === 'PENDIENTE_PAGO_ABONO') {
         if (!datos.fechaLimiteAbono) {
@@ -44,13 +43,6 @@ export const avanzarEstadoEventoSchema = z.object({
                 code: z.ZodIssueCode.custom,
                 path: ['fechaLimiteAbono'],
                 message: 'La fecha límite del abono es obligatoria.'
-            });
-        }
-        if (datos.montoAbono === undefined) {
-            context.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['montoAbono'],
-                message: 'El monto del abono es obligatorio.'
             });
         }
     }

@@ -1,15 +1,32 @@
-const CATEGORIAS_DETALLE = new Set([
+export const CATEGORIAS_DETALLE = [
+    'BASE_EVENTO',
     'PERSONAL',
     'EQUIPAMIENTO',
     'TRANSPORTE',
     'BANQUETERIA',
     'DECORACION',
-    'OTRO'
-]);
+    'OTRO',
+    'AJUSTE_EVENTO'
+];
+
+// AJUSTE_EVENTO lo genera solo el sistema (cobro extra por aumentar invitados u horas después del primer abono)
+export const CATEGORIA_AJUSTE_EVENTO = 'AJUSTE_EVENTO';
+export const CATEGORIAS_EDITABLES = CATEGORIAS_DETALLE.filter((categoria) => categoria !== CATEGORIA_AJUSTE_EVENTO);
+
+const PORCENTAJE_PRIMER_ABONO = 0.5;
+export const PORCENTAJE_MARGEN_ARRIENDO = 20;
+const MAX_ENTERO_BD = 2147483647;
 
 function validarEnteroNoNegativo(valor, nombre) {
     if (!Number.isSafeInteger(valor) || valor < 0) {
         throw new TypeError(`${nombre} debe ser un entero no negativo`);
+    }
+}
+
+function validarMontoPersistible(valor, nombre) {
+    validarEnteroNoNegativo(valor, nombre);
+    if (valor > MAX_ENTERO_BD) {
+        throw new TypeError(`${nombre} excede el monto máximo permitido`);
     }
 }
 
@@ -27,100 +44,142 @@ function calcularCantidadRequerida(plantilla, cantidadPersonas) {
     return cantidadFija + cantidadVariable;
 }
 
-function crearDetalle({ categoria, descripcion, cantidad, precioUnitario }) {
+export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario, codigoEspecialidad, rutTrabajador, esArriendoTercero = false }) {
+    if (!CATEGORIAS_DETALLE.includes(categoria)) {
+        throw new TypeError(`categoria no permitida: ${categoria}`);
+    }
+    if (esArriendoTercero && categoria !== 'EQUIPAMIENTO') {
+        throw new TypeError('Solo las líneas de EQUIPAMIENTO pueden ser arriendo a terceros');
+    }
+
     validarEnteroNoNegativo(cantidad, 'cantidad');
-    validarEnteroNoNegativo(precioUnitario, 'precioUnitario');
+    validarMontoPersistible(precioUnitario, 'precioUnitario');
 
     if (cantidad === 0) {
         throw new TypeError('cantidad debe ser mayor que cero');
     }
 
     const subtotal = cantidad * precioUnitario;
-    validarEnteroNoNegativo(subtotal, 'subtotal');
+    validarMontoPersistible(subtotal, 'subtotal');
 
-    return { categoria, descripcion, cantidad, precioUnitario, subtotal };
+    return {
+        categoria,
+        descripcion,
+        cantidad,
+        precioUnitario,
+        subtotal,
+        esArriendoTercero,
+        ...(codigoEspecialidad !== undefined && codigoEspecialidad !== null ? { codigoEspecialidad } : {}),
+        ...(rutTrabajador ? { rutTrabajador } : {})
+    };
 }
 
+// El margen solo se aplica al costo del equipamiento arrendado a terceros (el subtotal de la línea es el costo).
+export function calcularTotales(detalles) {
+    const subtotal = detalles.reduce((suma, detalle) => suma + detalle.subtotal, 0);
+    const baseMargen = detalles
+        .filter((detalle) => detalle.categoria === 'EQUIPAMIENTO' && detalle.esArriendoTercero)
+        .reduce((suma, detalle) => suma + detalle.subtotal, 0);
+    const montoMargen = Math.round(baseMargen * PORCENTAJE_MARGEN_ARRIENDO / 100);
+    const total = subtotal + montoMargen;
+    validarMontoPersistible(total, 'total');
+
+    return { subtotal, montoMargen, total };
+}
+
+export function calcularPrimerAbono(total) {
+    return Math.round(total * PORCENTAJE_PRIMER_ABONO);
+}
+
+// Genera las líneas base que se precargan en el formulario de presupuesto (el staff las puede modificar).
+// - El personal fijo (sueldo mensual) no se cobra: su costo está cubierto por la tarifa base del evento.
+// - El personal externo se estima con la tarifa referencial hasta que se asigne con su tarifa acordada.
 export function calcularCotizacionInicial({
-    tipoEvento,
+    tipoEvento = null,
     horasEvento,
-    horasMontaje = 0,
-    horasDesmontaje = 0,
+    horasMontajeDesmontaje = 0,
     cantidadPersonas,
     plantillas = [],
-    detallesAdicionales = []
+    banqueterias = []
 }) {
     validarEnteroNoNegativo(horasEvento, 'horasEvento');
-    validarEnteroNoNegativo(horasMontaje, 'horasMontaje');
-    validarEnteroNoNegativo(horasDesmontaje, 'horasDesmontaje');
+    validarEnteroNoNegativo(horasMontajeDesmontaje, 'horasMontajeDesmontaje');
     validarEnteroNoNegativo(cantidadPersonas, 'cantidadPersonas');
-    validarEnteroNoNegativo(tipoEvento?.tarifaHoraBaseReferencial, 'tarifaHoraBaseReferencial');
 
     if (horasEvento === 0) throw new TypeError('horasEvento debe ser mayor que cero');
     if (cantidadPersonas === 0) throw new TypeError('cantidadPersonas debe ser mayor que cero');
-    if (!Array.isArray(plantillas) || !Array.isArray(detallesAdicionales)) {
-        throw new TypeError('plantillas y detallesAdicionales deben ser listas');
+    if (!Array.isArray(plantillas) || !Array.isArray(banqueterias)) {
+        throw new TypeError('plantillas y banqueterias deben ser listas');
     }
 
-    const horasTotales = horasEvento + horasMontaje + horasDesmontaje;
+    const horasTotales = horasEvento + horasMontajeDesmontaje;
     validarEnteroNoNegativo(horasTotales, 'horasTotales');
 
-    const detalles = [crearDetalle({
-        categoria: 'BASE_EVENTO',
-        descripcion: `Tarifa base por ${horasTotales} horas`,
-        cantidad: horasTotales,
-        precioUnitario: tipoEvento.tarifaHoraBaseReferencial
-    })];
+    const detalles = [];
+
+    if (tipoEvento) {
+        validarEnteroNoNegativo(tipoEvento.tarifaHoraBaseReferencial, 'tarifaHoraBaseReferencial');
+        detalles.push(crearDetalle({
+            categoria: 'BASE_EVENTO',
+            descripcion: `Tarifa base por ${horasTotales} horas`,
+            cantidad: horasTotales,
+            precioUnitario: tipoEvento.tarifaHoraBaseReferencial
+        }));
+    }
 
     for (const plantilla of plantillas) {
-        const cantidad = calcularCantidadRequerida(plantilla, cantidadPersonas);
-        if (cantidad === 0) continue;
-
         const tieneEquipo = Boolean(plantilla.equipo);
         const tieneEspecialidad = Boolean(plantilla.especialidad);
         if (tieneEquipo === tieneEspecialidad) {
             throw new TypeError('cada plantilla debe definir exactamente un equipo o una especialidad');
         }
 
+        const cantidad = calcularCantidadRequerida(plantilla, cantidadPersonas);
+        if (cantidad === 0) continue;
+
         if (tieneEquipo) {
-            const tarifaHora = plantilla.equipo.arriendoHoraReferencial;
-            validarEnteroNoNegativo(tarifaHora, 'arriendoHoraReferencial');
+            // Un equipo sin tarifa referencial se precarga en 0 para que el staff complete el precio.
+            const tarifaHora = plantilla.equipo.arriendoHoraReferencial ?? 0;
             detalles.push(crearDetalle({
                 categoria: 'EQUIPAMIENTO',
                 descripcion: `${plantilla.equipo.nombre} (estimado por ${horasTotales} horas)`,
                 cantidad,
-                precioUnitario: tarifaHora * horasTotales
+                precioUnitario: tarifaHora * horasTotales,
+                esArriendoTercero: Boolean(plantilla.equipo.esExterno)
             }));
         } else {
-            const tarifaHora = plantilla.especialidad.tarifaHoraReferencial;
-            validarEnteroNoNegativo(tarifaHora, 'tarifaHoraReferencial');
+            if (plantilla.especialidad.esPersonalFijo) continue;
+
             detalles.push(crearDetalle({
                 categoria: 'PERSONAL',
                 descripcion: `${plantilla.especialidad.nombre} (estimado por ${horasTotales} horas)`,
                 cantidad,
-                precioUnitario: tarifaHora * horasTotales
+                precioUnitario: plantilla.especialidad.tarifaHoraReferencial * horasTotales,
+                codigoEspecialidad: plantilla.especialidad.codigo
             }));
         }
     }
 
-    for (const detalle of detallesAdicionales) {
-        if (!CATEGORIAS_DETALLE.has(detalle.categoria)) {
-            throw new TypeError(`categoria no permitida: ${detalle.categoria}`);
-        }
-        detalles.push(crearDetalle(detalle));
+    for (const asignacion of banqueterias) {
+        if (asignacion.cantidadRequerida === 0) continue;
+
+        detalles.push(crearDetalle({
+            categoria: 'BANQUETERIA',
+            descripcion: `${asignacion.banqueteria.nombre} (por persona)`,
+            cantidad: asignacion.cantidadRequerida,
+            precioUnitario: asignacion.banqueteria.precioPersonaReferencial
+        }));
     }
 
-    const total = detalles.reduce((suma, detalle) => suma + detalle.subtotal, 0);
-    validarEnteroNoNegativo(total, 'total');
-
-    const primerAbono = Math.round(total * 0.5);
+    const totales = calcularTotales(detalles);
+    const primerAbono = calcularPrimerAbono(totales.total);
 
     return {
-        moneda: 'CLP',
         horasTotales,
+        porcentajeMargen: PORCENTAJE_MARGEN_ARRIENDO,
         detalles,
-        total,
+        ...totales,
         primerAbono,
-        saldoInicial: total - primerAbono
+        saldoInicial: totales.total - primerAbono
     };
 }

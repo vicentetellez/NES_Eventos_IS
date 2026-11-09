@@ -90,10 +90,9 @@ export const deleteEventoController = async (req, res, next) => {
 export const avanzarEstadoEventoController = async (req, res, next) => {
     try {
         const { codigo } = req.validatedParams;
-        const { estadoDestino, fechaLimiteAbono, montoAbono } = req.body;
+        const { estadoDestino, fechaLimiteAbono } = req.body;
         const evento = await avanzarEstadoEvento(codigo, estadoDestino, req.user.rut, {
-            fechaLimiteAbono,
-            montoAbono
+            fechaLimiteAbono
         });
         response.success(res, 200, `Estado del evento con código ${codigo} actualizado correctamente`, { evento });
     } catch (error) {
