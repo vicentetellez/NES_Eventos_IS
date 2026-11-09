@@ -592,7 +592,15 @@ async function seedBanqueteria(){
         if(countBanqueteria === 0){
             const banqueterias = [
                 { nombre: 'Menú 3 tiempos', descripcion: 'Incluye entrada, plato principal y postre, alimentos conversables', precioPersonaReferencial: 27000 },
-                { nombre: 'Coctel liviano', descripcion: 'Incluye una variedad de picoteos y aperitivos', precioPersonaReferencial: 10000 }
+                { nombre: 'Coctel liviano', descripcion: 'Incluye una variedad de picoteos y aperitivos', precioPersonaReferencial: 10000 },
+                { nombre: 'Coctel premium', descripcion: 'Picoteos fríos y calientes, mini brochetas, empanaditas gourmet y estación de tragos de autor', precioPersonaReferencial: 18000 },
+                { nombre: 'Buffet criollo', descripcion: 'Estaciones de comida típica chilena: cazuelas, pastel de choclo, asado al palo y ensaladas de temporada', precioPersonaReferencial: 24000 },
+                { nombre: 'Menú vegetariano / vegano', descripcion: 'Entrada, plato principal y postre 100% vegetales, con opciones sin gluten bajo solicitud', precioPersonaReferencial: 25000 },
+                { nombre: 'Asado completo', descripcion: 'Cortes de vacuno, cerdo y pollo a la parrilla, choripanes de bienvenida, papas cocidas y ensaladas', precioPersonaReferencial: 29000 },
+                { nombre: 'Coffee break', descripcion: 'Café, té, jugos naturales, kuchenes, mini sándwiches y fruta de estación', precioPersonaReferencial: 8000 },
+                { nombre: 'Brunch dominical', descripcion: 'Mesa de panes amasados, huevos revueltos, repostería, frutas, yogurt y estación de café', precioPersonaReferencial: 15000 },
+                { nombre: 'Menú infantil', descripcion: 'Nuggets, papas fritas, mini hamburguesas, brochetas de fruta y postres para los más pequeños', precioPersonaReferencial: 12000 },
+                { nombre: 'Mesa dulce y postres', descripcion: 'Variedad de mini postres, mousse, cheesecakes, brownie bites y fuente de chocolate', precioPersonaReferencial: 9000 }
             ];
             await prisma.banqueteria.createMany({ data: banqueterias });
             console.log('Banqueteria sembrada correctamente.');
