@@ -3,6 +3,7 @@ import prisma from '../config/prisma.js';
 import { AppError } from '../helpers/responses.js'
 import { obtenerOrCrearCliente } from './cliente.service.js';
 import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
+import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
 
 // Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
@@ -157,7 +158,24 @@ async function crearEventoEnTransaccion(prismaTransaction, rutCliente, datosEven
     return newEvento;
 }
 
+const CAMPOS_QUE_AFECTAN_PRESUPUESTO = ['cantidadPersonas', 'horasEvento', 'horasMontajeDesmontaje'];
+
 export async function updateEvento(codigo, datosEvento) {
+    // Con presupuesto en curso, invitados y horas solo se cambian por el endpoint de ajuste del presupuesto,
+    // que recalcula el cobro adicional. Mientras se cotiza (COTIZANDO) o antes de que exista presupuesto, son libres.
+    if (CAMPOS_QUE_AFECTAN_PRESUPUESTO.some((campo) => datosEvento[campo] !== undefined)) {
+        const evento = await prisma.evento.findUnique({
+            where: { codigo },
+            select: { estado: true, presupuesto: { select: { codigo: true } } }
+        });
+        if (evento?.presupuesto && evento.estado !== 'COTIZANDO') {
+            throw new AppError(
+                'La cantidad de personas y las horas del evento no se pueden modificar aquí una vez cotizado. Use PATCH /presupuestos/evento/:codigo/ajustar-evento',
+                409
+            );
+        }
+    }
+
     const updatedEvento = await prisma.evento.update({
         where: { codigo },
         data: datosEvento
@@ -206,6 +224,29 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
     if (!transicionesPermitidas[evento.estado].includes(estadoDestino)) {
         throw new AppError(`No se puede cambiar de ${evento.estado} a ${estadoDestino}`, 400);
     }
+
+    // El abono es el 50% del total del presupuesto, que debe estar validado por el gerente
+    let montoAbono;
+    if (estadoDestino === 'PENDIENTE_PAGO_ABONO') {
+        const presupuesto = await prisma.presupuesto.findUnique({ where: { codigoEvento } });
+        if (!presupuesto || presupuesto.estado !== 'VALIDADO') {
+            throw new AppError('El evento necesita un presupuesto validado por el gerente para pasar a PENDIENTE_PAGO_ABONO', 409);
+        }
+        montoAbono = calcularPrimerAbono(presupuesto.total);
+
+        const { fechaLimiteAbono } = datosAbono;
+        const ahora = new Date();
+        const hoy = Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+        const limite = Date.UTC(
+            fechaLimiteAbono.getUTCFullYear(), fechaLimiteAbono.getUTCMonth(), fechaLimiteAbono.getUTCDate()
+        );
+        if (limite < hoy) {
+            throw new AppError('La fecha límite del abono no puede ser anterior a hoy', 400);
+        }
+        if (limite >= new Date(evento.fechaEvento).getTime()) {
+            throw new AppError('La fecha límite del abono debe ser anterior a la fecha del evento', 400);
+        }
+    }
    
     if (estadoDestino === 'ORGANIZANDO') {
         evento.estado = estadoDestino;
@@ -230,7 +271,7 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
                 fechaPagoFinal: evento.fechaPagoFinal,
                 ...(estadoDestino === 'PENDIENTE_PAGO_ABONO' ? {
                     fechaLimiteAbono: datosAbono.fechaLimiteAbono,
-                    montoAbono: datosAbono.montoAbono
+                    montoAbono
                 } : {}) }
     });
     return updatedEvento;

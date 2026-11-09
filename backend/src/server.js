@@ -8,7 +8,7 @@ async function bootstrap(){
         console.log('Conexion a la base de datos exitosa.');
 
         app.listen(PORT, () => {
-            console.log(`Servidor ejecutandose en: http://localhost:${PORT}`);
+            console.log(`Servidor ejecutándose en el puerto ${PORT}`);
         });
     } catch (error) {
         console.error('Error al conectar a la base de datos o iniciar el servidor:', error);
