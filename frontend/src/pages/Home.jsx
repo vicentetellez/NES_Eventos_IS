@@ -45,6 +45,12 @@ export default function Home() {
         icon: '🗂️',
         },
         {
+        title: 'Reseñas de Eventos',
+        text: 'Consulta las reseñas de clientes y las evaluaciones de los trabajadores participantes.',
+        to: '/panel/resenas-eventos',
+        icon: '📝',
+        },
+        {
         title: 'Registro de Trabajadores',
         text: 'Ingresa nuevos trabajadores con su foto de perfil y monitorea el historial de calificaciones.',
         to: '/panel/trabajadores',
