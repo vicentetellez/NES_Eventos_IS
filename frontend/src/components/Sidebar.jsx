@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
 
@@ -18,6 +19,7 @@ const menuConfig = {
     { title: 'Validar Presupuestos', icon: '✅', to: '/panel/validacion-presupuestos' },
     { title: 'Eventos en organización', icon: '🛠️', to: '/panel/eventos-organizando' },
     { title: 'Gestionar Catálogos', icon: '🗂️', to: '/panel/catalogos' },
+    {title: 'Reseñas de Eventos', icon: '📝', to: '/panel/resenas-eventos'},
     { title: 'Gestión de Trabajadores', icon: '👥', to: '/panel/trabajadores' },
     { title: 'Mi Perfil', icon: '👤', to: '/panel/mi-perfil' },
   ],
