@@ -30,7 +30,7 @@ function validarMontoPersistible(valor, nombre) {
     }
 }
 
-function calcularCantidadRequerida(plantilla, cantidadPersonas) {
+export function calcularCantidadRequerida(plantilla, cantidadPersonas) {
     const cantidadFija = plantilla.cantidadFija ?? 0;
     const ratioInvitados = plantilla.ratioInvitados ?? 0;
 
@@ -44,12 +44,15 @@ function calcularCantidadRequerida(plantilla, cantidadPersonas) {
     return cantidadFija + cantidadVariable;
 }
 
-export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario, codigoEspecialidad, rutTrabajador, esArriendoTercero = false }) {
+export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario, codigoEspecialidad, codigoEquipo, rutTrabajador, esArriendoTercero = false }) {
     if (!CATEGORIAS_DETALLE.includes(categoria)) {
         throw new TypeError(`categoria no permitida: ${categoria}`);
     }
-    if (esArriendoTercero && categoria !== 'EQUIPAMIENTO') {
-        throw new TypeError('Solo las líneas de EQUIPAMIENTO pueden ser arriendo a terceros');
+    if (esArriendoTercero && !['EQUIPAMIENTO', 'AJUSTE_EVENTO'].includes(categoria)) {
+        throw new TypeError('Solo las líneas de equipamiento y sus ajustes pueden ser arriendo a terceros');
+    }
+    if (codigoEquipo !== undefined && codigoEquipo !== null && !['EQUIPAMIENTO', 'AJUSTE_EVENTO'].includes(categoria)) {
+        throw new TypeError('Solo las líneas de equipamiento y sus ajustes pueden referenciar un equipo');
     }
 
     validarEnteroNoNegativo(cantidad, 'cantidad');
@@ -70,6 +73,7 @@ export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario,
         subtotal,
         esArriendoTercero,
         ...(codigoEspecialidad !== undefined && codigoEspecialidad !== null ? { codigoEspecialidad } : {}),
+        ...(codigoEquipo !== undefined && codigoEquipo !== null ? { codigoEquipo } : {}),
         ...(rutTrabajador ? { rutTrabajador } : {})
     };
 }
@@ -78,7 +82,10 @@ export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario,
 export function calcularTotales(detalles) {
     const subtotal = detalles.reduce((suma, detalle) => suma + detalle.subtotal, 0);
     const baseMargen = detalles
-        .filter((detalle) => detalle.categoria === 'EQUIPAMIENTO' && detalle.esArriendoTercero)
+        .filter((detalle) =>
+            ['EQUIPAMIENTO', 'AJUSTE_EVENTO'].includes(detalle.categoria) &&
+            detalle.esArriendoTercero
+        )
         .reduce((suma, detalle) => suma + detalle.subtotal, 0);
     const montoMargen = Math.round(baseMargen * PORCENTAJE_MARGEN_ARRIENDO / 100);
     const total = subtotal + montoMargen;
@@ -145,7 +152,8 @@ export function calcularCotizacionInicial({
                 descripcion: `${plantilla.equipo.nombre} (estimado por ${horasTotales} horas)`,
                 cantidad,
                 precioUnitario: tarifaHora * horasTotales,
-                esArriendoTercero: Boolean(plantilla.equipo.esExterno)
+                esArriendoTercero: Boolean(plantilla.equipo.esExterno),
+                codigoEquipo: plantilla.equipo.codigo
             }));
         } else {
             if (plantilla.especialidad.esPersonalFijo) continue;

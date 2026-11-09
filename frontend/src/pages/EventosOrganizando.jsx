@@ -141,6 +141,12 @@ export default function EventosOrganizando() {
                       {formatoCLP(presupuesto.total - (presupuesto.evento.montoAbono ?? 0))}
                     </td>
                     <td className="space-x-2 whitespace-nowrap px-4 py-3 text-right">
+                      <Link
+                        to={`/panel/asignacion-evento/${presupuesto.codigoEvento}`}
+                        className="inline-flex h-9 items-center rounded-lg border border-[#c9a84c]/40 px-4 text-xs font-semibold text-[#c9a84c] transition hover:bg-[#c9a84c]/10"
+                      >
+                        Personal y equipos
+                      </Link>
                       <button
                         type="button"
                         onClick={() => descargarPdf(presupuesto)}

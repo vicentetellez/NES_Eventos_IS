@@ -4,6 +4,7 @@ import { AppError } from '../helpers/responses.js'
 import { obtenerOrCrearCliente } from './cliente.service.js';
 import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
 import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
+import { inicializarEquiposPresupuestados } from './equipoEvento.service.js';
 
 // Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
@@ -212,70 +213,59 @@ const transicionesPermitidas = {
     CANCELADO: []
 };
 
-export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario, datosAbono = {}){
-    const evento = await prisma.evento.findUnique({ 
-        where: { codigo: codigoEvento } 
+export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario, datosAbono = {}) {
+    return prisma.$transaction(async (tx) => {
+        const evento = await tx.evento.findUnique({ where: { codigo: codigoEvento } });
+        if (!evento) {
+            throw new AppError(`Evento con código ${codigoEvento} no encontrado`, 404);
+        }
+
+        if (!transicionesPermitidas[evento.estado].includes(estadoDestino)) {
+            throw new AppError(`No se puede cambiar de ${evento.estado} a ${estadoDestino}`, 400);
+        }
+
+        const datosActualizacion = { estado: estadoDestino };
+        if (estadoDestino === 'PENDIENTE_PAGO_ABONO') {
+            const presupuesto = await tx.presupuesto.findUnique({ where: { codigoEvento } });
+            if (!presupuesto || presupuesto.estado !== 'VALIDADO') {
+                throw new AppError('El evento necesita un presupuesto validado por el gerente para pasar a PENDIENTE_PAGO_ABONO', 409);
+            }
+            const fechaLimiteAbono = datosAbono.fechaLimiteAbono;
+            const ahora = new Date();
+            const hoy = Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+            const limite = Date.UTC(
+                fechaLimiteAbono.getUTCFullYear(),
+                fechaLimiteAbono.getUTCMonth(),
+                fechaLimiteAbono.getUTCDate()
+            );
+            if (limite < hoy) {
+                throw new AppError('La fecha límite del abono no puede ser anterior a hoy', 400);
+            }
+            if (limite >= new Date(evento.fechaEvento).getTime()) {
+                throw new AppError('La fecha límite del abono debe ser anterior a la fecha del evento', 400);
+            }
+            datosActualizacion.fechaLimiteAbono = fechaLimiteAbono;
+            datosActualizacion.montoAbono = calcularPrimerAbono(presupuesto.total);
+        }
+        if (estadoDestino === 'ORGANIZANDO') {
+            datosActualizacion.rutUsuarioPagoAbono = rutUsuario;
+            datosActualizacion.fechaPagoAbono = new Date();
+        }
+        if (estadoDestino === 'EN_PREPARACION') {
+            datosActualizacion.rutUsuarioPagoFinal = rutUsuario;
+            datosActualizacion.fechaPagoFinal = new Date();
+        }
+
+        const eventoActualizado = await tx.evento.update({
+            where: { codigo: codigoEvento },
+            data: datosActualizacion
+        });
+        if (estadoDestino === 'ORGANIZANDO') {
+            await inicializarEquiposPresupuestados(tx, codigoEvento);
+        }
+        return eventoActualizado;
     });
-
-    if (!evento){
-        throw new AppError(`Evento con código ${codigoEvento} no encontrado`, 404);
-    }
-
-    if (!transicionesPermitidas[evento.estado].includes(estadoDestino)) {
-        throw new AppError(`No se puede cambiar de ${evento.estado} a ${estadoDestino}`, 400);
-    }
-
-    // El abono es el 50% del total del presupuesto, que debe estar validado por el gerente
-    let montoAbono;
-    if (estadoDestino === 'PENDIENTE_PAGO_ABONO') {
-        const presupuesto = await prisma.presupuesto.findUnique({ where: { codigoEvento } });
-        if (!presupuesto || presupuesto.estado !== 'VALIDADO') {
-            throw new AppError('El evento necesita un presupuesto validado por el gerente para pasar a PENDIENTE_PAGO_ABONO', 409);
-        }
-        montoAbono = calcularPrimerAbono(presupuesto.total);
-
-        const { fechaLimiteAbono } = datosAbono;
-        const ahora = new Date();
-        const hoy = Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-        const limite = Date.UTC(
-            fechaLimiteAbono.getUTCFullYear(), fechaLimiteAbono.getUTCMonth(), fechaLimiteAbono.getUTCDate()
-        );
-        if (limite < hoy) {
-            throw new AppError('La fecha límite del abono no puede ser anterior a hoy', 400);
-        }
-        if (limite >= new Date(evento.fechaEvento).getTime()) {
-            throw new AppError('La fecha límite del abono debe ser anterior a la fecha del evento', 400);
-        }
-    }
-   
-    if (estadoDestino === 'ORGANIZANDO') {
-        evento.estado = estadoDestino;
-        evento.rutUsuarioPagoAbono = rutUsuario;
-        evento.fechaPagoAbono = new Date();
-    }
-    else if (estadoDestino === 'EN_PREPARACION') {
-        evento.estado = estadoDestino;
-        evento.rutUsuarioPagoFinal = rutUsuario;
-        evento.fechaPagoFinal = new Date();
-    }
-    else {
-        evento.estado = estadoDestino;
-    }
-
-    const updatedEvento = await prisma.evento.update({
-        where: { codigo: codigoEvento },
-        data: { estado: estadoDestino,
-                rutUsuarioPagoAbono: evento.rutUsuarioPagoAbono,
-                rutUsuarioPagoFinal: evento.rutUsuarioPagoFinal,
-                fechaPagoAbono: evento.fechaPagoAbono,
-                fechaPagoFinal: evento.fechaPagoFinal,
-                ...(estadoDestino === 'PENDIENTE_PAGO_ABONO' ? {
-                    fechaLimiteAbono: datosAbono.fechaLimiteAbono,
-                    montoAbono
-                } : {}) }
-    });
-    return updatedEvento;
-};
+}
 
 
 

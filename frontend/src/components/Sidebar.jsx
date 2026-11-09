@@ -2,38 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
-
-const menuConfig = {  
-  STAFF: [
-    { title: 'Inicio', icon: '🏠', to: '/home' },
-    { title: 'Eventos y Calendario', icon: '📅', to: '/panel/eventos' },
-    { title: 'Presupuestos', icon: '🧾', to: '/panel/presupuestos' },
-    { title: 'Eventos en organización', icon: '🛠️', to: '/panel/eventos-organizando' },
-    { title: 'Ranking Trabajadores', icon: '🏆', to: '/panel/trabajadores' },
-    { title: 'Mi Perfil', icon: '👤', to: '/panel/mi-perfil' },
-  ],
-  GERENTE: [
-    { title: 'Inicio', icon: '🏠', to: '/home' },
-    { title: 'Eventos y Presupuestos', icon: '📅', to: '/panel/eventos' },
-    { title: 'Presupuestos', icon: '🧾', to: '/panel/presupuestos' },
-    { title: 'Validar Presupuestos', icon: '✅', to: '/panel/validacion-presupuestos' },
-    { title: 'Eventos en organización', icon: '🛠️', to: '/panel/eventos-organizando' },
-    { title: 'Gestionar Catálogos', icon: '🗂️', to: '/panel/catalogos' },
-    {title: 'Reseñas de Eventos', icon: '📝', to: '/panel/resenas-eventos'},
-    { title: 'Gestión de Trabajadores', icon: '👥', to: '/panel/trabajadores' },
-    { title: 'Mi Perfil', icon: '👤', to: '/panel/mi-perfil' },
-  ],
-  ADMIN: [
-    { title: 'Inicio', icon: '🏠', to: '/home' },
-    { title: 'Usuarios del Sistema', icon: '🔑', to: '/panel/usuarios' },
-    { title: 'Control de Eventos', icon: '📅', to: '/panel/eventos' },
-    { title: 'Presupuestos', icon: '🧾', to: '/panel/presupuestos' },
-    { title: 'Eventos en organización', icon: '🛠️', to: '/panel/eventos-organizando' },
-    { title: 'Gestionar Catálogos', icon: '🗂️', to: '/panel/catalogos' },
-    { title: 'Gestión de Trabajadores', icon: '👥', to: '/panel/trabajadores' },
-    { title: 'Mi Perfil', icon: '👤', to: '/panel/mi-perfil' },
-  ],
-};
+import menuConfig from '../menuConfig'
 
 function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth()

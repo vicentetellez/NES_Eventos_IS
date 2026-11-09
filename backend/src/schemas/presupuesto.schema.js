@@ -8,7 +8,16 @@ const detallePresupuestoSchema = z.object({
     cantidad: z.number().int().positive(),
     precioUnitario: z.number().int().nonnegative(),
     codigoEspecialidad: z.number().int().positive().optional(),
+    codigoEquipo: z.number().int().positive().optional(),
     esArriendoTercero: z.boolean().optional()
+}).superRefine((detalle, context) => {
+    if (detalle.codigoEquipo && detalle.categoria !== 'EQUIPAMIENTO') {
+        context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['codigoEquipo'],
+            message: 'El equipo solo se puede asociar a una línea de EQUIPAMIENTO.'
+        });
+    }
 });
 
 export const crearPresupuestoSchema = z.object({
