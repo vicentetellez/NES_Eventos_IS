@@ -13,9 +13,13 @@ import evaluacionEventoRoutes from './evaluacionEvento.routes.js';
 import evaluacionTrabajadorRoutes from './evaluacionTrabajador.routes.js';
 import asignacionTrabajadorRoutes from './asignacionTrabajador.routes.js';
 import equipoEventoRoutes from './equipoEvento.routes.js';
+import { meController } from '../controllers/auth.controller.js';
+import { authenticateJwt } from '../middlewares/authentication.middleware.js';
+import { blockIfNotActive } from '../middlewares/authorization.middleware.js';
 
 const router = Router();
 
+router.get('/me', authenticateJwt, blockIfNotActive, meController);
 router.use('/auth', authRoutes);
 router.use('/usuario', usuarioRoutes);
 router.use('/tipo-evento', tipoEventoRoutes);

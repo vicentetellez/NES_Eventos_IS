@@ -2,7 +2,8 @@ import { response } from '../helpers/responses.js';
 import {
     createEvaluacionEvento,
     existingEvaluacionEvento,
-    getEvaluacionEventoBycodigo
+    getEvaluacionEventoBycodigo,
+    getResenasEventos
 } from '../services/evaluacionEvento.service.js';
 
 export const existingEvaluacionEventoController = async (req, res, next) => {
@@ -31,6 +32,15 @@ export const getEvaluacionEventoBycodigoController = async (req, res, next) => {
         const result = await getEvaluacionEventoBycodigo(codigo);
         response.success(res, 200, "Busqueda de evaluacion del evento exitosa", result);
     }catch(error){
+        next(error);
+    }
+};
+
+export const getResenasEventosController = async (req, res, next) => {
+    try {
+        const result = await getResenasEventos();
+        response.success(res, 200, 'Búsqueda de reseñas de eventos exitosa', result);
+    } catch(error) {
         next(error);
     }
 };

@@ -7,7 +7,7 @@ import Home from './pages/Home'
 import Error404 from './pages/Error404'
 import Login from './pages/Login'
 import FormularioSolicitud from './pages/SolicitudEvento.jsx'
-//import FormularioEvaluacion from './pages/EvaluarEvento.jsx'
+import FormularioEvaluacion from './pages/resenaEvento.jsx'
 // Privadas (Con sidebar y JWT)
 import CalendarioEvento from './pages/Calendario.jsx'
 import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
@@ -17,7 +17,8 @@ import Presupuestos from './pages/Presupuestos.jsx'
 import PresupuestoEvento from './pages/PresupuestoEvento.jsx'
 import ValidacionPresupuestos from './pages/ValidacionPresupuestos.jsx'
 import EventosOrganizando from './pages/EventosOrganizando.jsx'
-import AsignacionEvento from './pages/AsignacionEvento.jsx'
+import ResenasEventos from './pages/ResenasEventos.jsx'
+import Perfil from './pages/Perfil.jsx'
 
 import './styles/style.css'
 
@@ -43,12 +44,12 @@ const router = createBrowserRouter([
         path: 'solicitud-evento',
         element: <FormularioSolicitud />,
       },
-      // {
-      //   path: 'evaluar-evento',
-      //   element: <FormularioEvaluacion />,
-      // },
+        {
+          path: 'evaluar-evento',
+          element: <FormularioEvaluacion />,
+        },
       {
-        path: 'calendario-evento',
+          path: 'panel/eventos',
         element: <CalendarioEvento />,
       },
       {
@@ -72,12 +73,16 @@ const router = createBrowserRouter([
         element: <ValidacionPresupuestos />,
       },
       {
-        path: 'panel/eventos-organizando',
-        element: <EventosOrganizando />,
+        path: 'panel/resenas-eventos',
+        element: <ResenasEventos />,
       },
       {
-        path: 'panel/asignacion-evento/:codigo',
-        element: <AsignacionEvento />,
+        path: 'panel/mi-perfil',
+        element: <Perfil />,
+      },
+      {
+        path: 'panel/eventos-organizando',
+        element: <EventosOrganizando />,
       },
       {
         path: '*',

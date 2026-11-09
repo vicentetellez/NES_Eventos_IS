@@ -53,3 +53,124 @@ export async function getEvaluacionEventoBycodigo(codigo){
     if(!evaluacionEvento) throw new AppError('Evaluacion del evento no encontrada',404);
     return {evaluacionEvento};
 }
+
+export async function getResenasEventos(){
+    const evaluaciones = await prisma.evaluacionEvento.findMany({
+        orderBy: {fechaRegistro: 'desc'},
+        include: {
+            evento: {
+                select: {
+                    codigo: true,
+                    codigoEvaluacion: true,
+                    estado: true,
+                    fechaEvento: true,
+                    tipoEvento: {select: {nombre: true}},
+                    tipoEventoCliente: true,
+                    centroEvento: {select: {nombre: true}},
+                    centroEventoCliente: true,
+                    cliente: {
+                        select: {
+                            persona: {
+                                select: {
+                                    nombre: true,
+                                    primerApellido: true,
+                                    segundoApellido: true
+                                }
+                            }
+                        }
+                    },
+                    participaciones: {
+                        where: {especialidad: {is: {esEvaluable: true}}},
+                        select: {
+                            rutTrabajador: true,
+                            codigoEspecialidad: true,
+                            especialidad: {select: {codigo: true, nombre: true}},
+                            trabajador: {
+                                select: {
+                                    rut: true,
+                                    persona: {
+                                        select: {
+                                            nombre: true,
+                                            primerApellido: true,
+                                            segundoApellido: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    evaluacionesTrabajadores: {
+                        select: {
+                            calificacion: true,
+                            comentarioEspecifico: true,
+                            rutTrabajador: true,
+                            codigoEspecialidad: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    return {
+        resenas: evaluaciones.map(({evento, ...resena}) => {
+            const puntajeTotalGuardado = Number(resena.puntajeTotal);
+            const evaluacionesPorParticipacion = new Map(
+                evento.evaluacionesTrabajadores.map((evaluacion) => [
+                    `${evaluacion.rutTrabajador}:${evaluacion.codigoEspecialidad}`,
+                    evaluacion
+                ])
+            );
+            const especialidadesPorCodigo = new Map();
+
+            for (const participacion of evento.participaciones) {
+                const {especialidad, trabajador} = participacion;
+                if (!especialidadesPorCodigo.has(especialidad.codigo)) {
+                    especialidadesPorCodigo.set(especialidad.codigo, {
+                        codigo: especialidad.codigo,
+                        nombre: especialidad.nombre,
+                        trabajadores: []
+                    });
+                }
+
+                const persona = trabajador.persona;
+                especialidadesPorCodigo.get(especialidad.codigo).trabajadores.push({
+                    rut: trabajador.rut,
+                    nombre: [persona.nombre, persona.primerApellido, persona.segundoApellido]
+                        .filter(Boolean)
+                        .join(' '),
+                    evaluacion: evaluacionesPorParticipacion.get(
+                        `${trabajador.rut}:${especialidad.codigo}`
+                    ) ?? null
+                });
+            }
+
+            const personaCliente = evento.cliente.persona;
+            return {
+                ...resena,
+                puntajeTotal: puntajeTotalGuardado > 5
+                    ? Number((puntajeTotalGuardado / 20).toFixed(2))
+                    : puntajeTotalGuardado,
+                evento: {
+                    codigo: evento.codigo,
+                    codigoEvaluacion: evento.codigoEvaluacion,
+                    estado: evento.estado,
+                    fechaEvento: evento.fechaEvento,
+                    nombre: evento.tipoEvento?.nombre ?? evento.tipoEventoCliente ?? 'Evento',
+                    centro: evento.centroEvento?.nombre ?? evento.centroEventoCliente ?? null,
+                    cliente: [personaCliente.nombre, personaCliente.primerApellido, personaCliente.segundoApellido]
+                        .filter(Boolean)
+                        .join(' '),
+                    especialidades: [...especialidadesPorCodigo.values()]
+                        .map((especialidad) => ({
+                            ...especialidad,
+                            trabajadores: especialidad.trabajadores.sort((a, b) =>
+                                a.nombre.localeCompare(b.nombre, 'es')
+                            )
+                        }))
+                        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+                }
+            };
+        })
+    };
+}
