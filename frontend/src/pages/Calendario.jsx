@@ -1,34 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
-import { login } from '../services/auth.service';
+import { useAuth } from '../context/AuthContext';
 import { getCalendarioEventos } from '../services/calendarioEvento.service';
 import { getEventosPorEstado } from '../services/evento.service';
 
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const ESTADOS_EVENTO = ['SOLICITADO', 'COTIZANDO', 'PENDIENTE_PAGO_ABONO', 'ORGANIZANDO', 'PENDIENTE_PAGO_FINAL', 'EN_PREPARACION', 'EN_EJECUCION', 'FINALIZADO', 'CANCELADO'];
-const DEFAULT_RUT = '11111111-1';
-const DEFAULT_PASSWORD = 'admin123';
+const descripcionesPorEstado = {
+  EN_PREPARACION: 'El evento fue pagado en su totalidad.',
+  PENDIENTE_PAGO_ABONO: 'No se ha realizado el primer pago del abono.',
+  ORGANIZANDO: 'Pago del primer abono realizado.',
+  PENDIENTE_PAGO_FINAL: 'No se ha realizado el pago final del abono.',
+  FINALIZADO: 'El cliente puede realizar la reseña del evento.',
+};
 
 const colorMap = {
   naranja: {
-    shell: 'border-black bg-[#f3e8cc] text-[#744c1a]',
-    pill: 'bg-[#f5c76a] text-[#53320d]',
-    dot: 'bg-[#f59e0b]',
+    shell: 'border-white/10 bg-[#131622] text-[#f0ece4]',
+    pill: 'border border-[#c9a84c]/30 bg-[#c9a84c]/10 text-[#c9a84c]',
+    dot: 'bg-[#c9a84c]',
+    hover: 'hover:border-[#c9a84c]/50',
   },
   verde: {
-    shell: 'border-black bg-[#dfeee2] text-[#254a35]',
-    pill: 'bg-[#99d9a8] text-[#123f2a]',
-    dot: 'bg-[#22c55e]',
+    shell: 'border-white/10 bg-[#131622] text-[#f0ece4]',
+    pill: 'border border-emerald-400/20 bg-emerald-400/10 text-emerald-300',
+    dot: 'bg-emerald-400',
+    hover: 'hover:border-emerald-400/50',
   },
   rojo: {
-    shell: 'border-black bg-[#f6dddd] text-[#6e1f1f]',
-    pill: 'bg-[#f59a9a] text-[#4a1212]',
-    dot: 'bg-[#ef4444]',
+    shell: 'border-rose-400/30 bg-[#131622] text-[#f0ece4]',
+    pill: 'border border-rose-400/20 bg-rose-400/10 text-rose-300',
+    dot: 'bg-rose-400',
+    hover: 'hover:border-rose-400/50',
   },
   azul: {
-    shell: 'border-black bg-[#e5eefb] text-[#213d63]',
-    pill: 'bg-[#9dbae9] text-[#1e345f]',
-    dot: 'bg-[#4f8ef7]',
+    shell: 'border-white/10 bg-[#131622] text-[#f0ece4]',
+    pill: 'border border-sky-400/40 bg-sky-400/15 text-sky-300',
+    dot: 'bg-sky-400',
+    hover: 'hover:border-sky-400/50',
   },
 };
 
@@ -44,14 +53,14 @@ const calcularEstadoCalendario = (evento) => {
   const fechaPagoFinal = normalizarFecha(evento?.fechaPagoFinal);
   const fechaEvento = normalizarFecha(evento?.fechaEvento);
 
-  if (!fechaEvento) return { visible: false, color: null, motivo: 'Sin fecha del evento' };
+  if (!fechaEvento) return { visible: false, color: null };
 
   if (estadoEvento === 'FINALIZADO' && fechaPagoAbono && fechaPagoFinal) {
-    return { visible: true, color: 'azul', motivo: 'El evento está finalizado con fechaPagoAbono y fechaPagoFinal, por lo tanto el cliente podrá realizar la reseña' };
+    return { visible: true, color: 'azul' };
   }
 
   if (fechaPagoAbono && fechaPagoFinal) {
-    return { visible: true, color: 'verde', motivo: 'El evento tiene fechaPagoAbono y fechaPagoFinal, por lo tanto está en verde' };
+    return { visible: true, color: 'verde' };
   }
 
   if (fechaPagoAbono && !fechaPagoFinal) {
@@ -60,13 +69,13 @@ const calcularEstadoCalendario = (evento) => {
     fechaLimiteRojo.setDate(fechaEvento.getDate() - 14);
 
     if (hoy >= fechaLimiteRojo && hoy < fechaEvento) {
-      return { visible: true, color: 'rojo', motivo: 'Falta fechaPagoFinal y queda menos de dos semanas para el evento' };
+      return { visible: true, color: 'rojo' };
     }
 
-    return { visible: true, color: 'naranja', motivo: 'El evento tiene fechaPagoAbono, por lo tanto va en naranja' };
+    return { visible: true, color: 'naranja' };
   }
 
-  return { visible: false, color: null, motivo: 'El evento no cumple las condiciones del calendario' };
+  return { visible: false, color: null };
 };
 
 const normalizarEventosCalendario = (lista) => {
@@ -84,67 +93,48 @@ const formatearFecha = (fecha) => {
   return new Date(fecha).toLocaleDateString('es-CL');
 };
 
+const formatearEstado = (estado) => {
+  if (!estado) return '';
+  return estado
+    .replaceAll('_', ' ')
+    .toLocaleLowerCase('es-CL')
+    .replace(/^./u, (letra) => letra.toLocaleUpperCase('es-CL'))
+    .replace('preparacion', 'preparación')
+    .replace('ejecucion', 'ejecución');
+};
+
 export default function CalendarioEvento() {
-  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : { rut: DEFAULT_RUT };
-  });
+  const { isAuthenticated } = useAuth();
   const [eventos, setEventos] = useState([]);
   const [error, setError] = useState('');
   const [viewDate, setViewDate] = useState(new Date());
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
+    if (!isAuthenticated) {
+      setEventos([]);
+      setError('');
+      return;
     }
-  }, [token]);
 
-  useEffect(() => {
-    if (!eventos.length) return;
+    let activo = true;
+    setError('');
+    getCalendarioEventos()
+      .then(async (calendario) => {
+        if (calendario.length > 0) return calendario;
+        const respuestasEstado = await Promise.all(ESTADOS_EVENTO.map((estado) => getEventosPorEstado(estado)));
+        return respuestasEstado.flat();
+      })
+      .then((calendario) => {
+        if (!activo) return;
+        setError('');
+        setEventos(normalizarEventosCalendario(calendario));
+      })
+      .catch((fetchError) => {
+        if (activo) setError(fetchError.message || 'No se pudo cargar el calendario');
+      });
 
-    const hoy = new Date();
-    const hayEventoEnMesActual = eventos.some((evento) => {
-      const fecha = normalizarFecha(evento?.fechaEvento);
-      return fecha && fecha.getFullYear() === hoy.getFullYear() && fecha.getMonth() === hoy.getMonth();
-    });
-
-    if (!hayEventoEnMesActual) {
-      setViewDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
-    }
-  }, [eventos]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const autoLogin = async () => {
-      if (token) return;
-      try {
-        const authData = await login({ rut: DEFAULT_RUT, password: DEFAULT_PASSWORD });
-        if (authData?.token) {
-          setToken(authData.token);
-          setUser(authData.user ?? { rut: DEFAULT_RUT });
-        }
-      } catch (loginError) {
-        setError(loginError.message || 'No se pudo iniciar la sesión automática');
-      }
-    };
-
-    autoLogin();
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) return;
-    fetchCalendario();
-  }, [token]);
+    return () => { activo = false; };
+  }, [isAuthenticated]);
 
   const eventosConEstado = useMemo(() => normalizarEventosCalendario(eventos), [eventos]);
 
@@ -158,20 +148,6 @@ export default function CalendarioEvento() {
   );
 
   const eventosAMostrar = eventosOrdenados.length > 0 ? eventosOrdenados : eventos;
-
-  useEffect(() => {
-    if (!eventosAMostrar.length) return;
-
-    const fechaActual = new Date();
-    const mesTieneEventos = eventosAMostrar.some((evento) => {
-      const fecha = normalizarFecha(evento?.fechaEvento);
-      return fecha && fecha.getFullYear() === fechaActual.getFullYear() && fecha.getMonth() === fechaActual.getMonth();
-    });
-
-    if (mesTieneEventos) {
-      setViewDate(new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1));
-    }
-  }, [eventosAMostrar]);
 
   const currentMonth = viewDate.getMonth();
   const currentYear = viewDate.getFullYear();
@@ -199,111 +175,137 @@ export default function CalendarioEvento() {
     };
   });
 
-  const fetchCalendario = async () => {
-    try {
-      setError('');
-      let calendario = await getCalendarioEventos();
-
-      if (!calendario.length) {
-        const respuestasEstado = await Promise.all(ESTADOS_EVENTO.map(async (estado) => getEventosPorEstado(estado)));
-        calendario = respuestasEstado.flat();
-      }
-
-      setEventos(normalizarEventosCalendario(calendario));
-    } catch (fetchError) {
-      setError(fetchError.message || 'No se pudo cargar el calendario');
-    }
-  };
-
   const cambiarMes = (delta) => {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white p-2 text-[#393939] md:p-5">
-      <div className="mx-auto w-full max-w-[900px] border-2 border-black bg-[#f7f6f2] p-2 shadow-[0_1px_5px_rgba(0,0,0,0.12)] md:p-3">
-        <div className="mb-4 border-b-2 border-black pb-5">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#77736d]">Sesión activa</div>
-          <div className="text-[18px] font-semibold tracking-[0.02em] text-[#292929]">{user?.rut || DEFAULT_RUT}</div>
-        </div>
-
-        <div className="mx-auto w-full border-2 border-black bg-[#f8f7f4] p-1.5 md:p-2">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <button type="button" onClick={() => cambiarMes(-1)} className="flex h-8 w-8 items-center justify-center border-2 border-black bg-[#e9e7e1] text-[18px] leading-none text-[#595650] shadow-[0_1px_1px_rgba(0,0,0,0.12)]">‹</button>
-            <div className="text-[15px] font-semibold text-[#4a4843]">{monthNames[currentMonth]} {currentYear}</div>
-            <button type="button" onClick={() => cambiarMes(1)} className="flex h-8 w-8 items-center justify-center border-2 border-black bg-[#e9e7e1] text-[18px] leading-none text-[#595650] shadow-[0_1px_1px_rgba(0,0,0,0.12)]">›</button>
+    <main className="min-h-screen overflow-x-hidden bg-[#0a0c10] px-3 py-6 text-[#f0ece4] sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-7xl">
+        <header className="mb-6 flex flex-col gap-5 rounded-xl border border-white/10 bg-[#131622] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#c9a84c]">Gestión de eventos</p>
+            <h1 className="font-serif text-3xl sm:text-4xl">Calendario</h1>
+            <p className="mt-2 text-sm text-[#f0ece4]/50">Agenda, pagos y estado de los eventos</p>
           </div>
-          <div className="grid grid-cols-7 gap-0.5 px-0.5 text-center text-[10px] font-semibold text-[#57544e] md:gap-1">
-              {dayNames.map((day) => (
-                <div key={day} className="py-1">{day}</div>
-              ))}
+        </header>
+
+        <section className="rounded-xl border border-white/10 bg-[#131622] p-3 shadow-2xl shadow-black/20 sm:p-6" aria-label="Calendario de eventos">
+          <div className="mb-5 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <button
+              type="button"
+              onClick={() => cambiarMes(-1)}
+              aria-label="Mes anterior"
+              className="grid size-10 place-items-center rounded-lg border border-white/10 bg-[#0a0c10] text-2xl leading-none text-[#f0ece4]/70 transition hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
+            >‹</button>
+            <div className="text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c9a84c]">Agenda</p>
+              <h2 className="mt-1 text-lg font-semibold sm:text-xl">{monthNames[currentMonth]} {currentYear}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => cambiarMes(1)}
+              aria-label="Mes siguiente"
+              className="grid size-10 place-items-center rounded-lg border border-white/10 bg-[#0a0c10] text-2xl leading-none text-[#f0ece4]/70 transition hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
+            >›</button>
           </div>
 
-          <div className="grid grid-cols-7 gap-0.5 px-0.5 md:gap-1">
-              {calendarDays.map((day) => (
-                <div key={day.key} className={`min-h-[58px] p-1.5 md:min-h-[72px] ${day.inMonth ? 'border-2 border-black bg-[#fbfaf7]' : 'border border-black bg-[#f0efeb] text-[#aaa7a1]'} ${day.isToday ? '!border-2 !border-black !bg-[#d5e9ee] ring-1 ring-inset ring-black' : ''}`}>
-                  <div className="mb-1 text-[11px] font-medium">{day.dayNumber}</div>
-                  <div className="space-y-1">
-                    {day.eventosDelDia.slice(0, 2).map((evento, index) => {
-                      const color = evento?.estadoCalendario?.color || 'naranja';
-                      const classes = colorMap[color] || colorMap.naranja;
-                      return (
-                        <div key={`${evento.codigo}-${index}`} className={`flex items-center border border-[#66645f] px-1 py-0.5 text-[9px] font-semibold ${classes.pill}`}>
-                          <span className={`mr-1 inline-block h-2 w-2 rounded-[1px] ${classes.dot}`} />
-                          <span className="truncate">#{evento.codigo}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-[#f0ece4]/45 sm:gap-2">
+            {dayNames.map((day) => (
+              <div key={day} className="py-2">{day}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {calendarDays.map((day) => (
+              <div
+                key={day.key}
+                className={`min-h-[58px] rounded-md border p-1.5 transition sm:min-h-[92px] sm:p-2 ${day.inMonth ? 'border-white/10 bg-[#0a0c10]' : 'border-white/5 bg-white/[0.02] text-[#f0ece4]/25'} ${day.isToday ? '!border-[#c9a84c]/70 bg-[#c9a84c]/[0.08] ring-1 ring-inset ring-[#c9a84c]/30' : ''}`}
+              >
+                <div className={`mb-1 text-[11px] font-medium ${day.isToday ? 'text-[#c9a84c]' : ''}`}>{day.dayNumber}</div>
+                <div className="space-y-1">
+                  {day.eventosDelDia.slice(0, 2).map((evento, index) => {
+                    const color = evento?.estadoCalendario?.color || 'naranja';
+                    const classes = colorMap[color] || colorMap.naranja;
+                    return (
+                      <div key={`${evento.codigo}-${index}`} className={`flex items-center gap-1 rounded border px-1 py-0.5 text-[9px] font-semibold ${classes.pill}`}>
+                        <span className={`inline-block size-1.5 shrink-0 rounded-full ${classes.dot}`} />
+                        <span className="truncate">#{evento.codigo}</span>
+                      </div>
+                    );
+                  })}
+                  {day.eventosDelDia.length > 2 && (
+                    <p className="text-[9px] text-[#f0ece4]/45">+{day.eventosDelDia.length - 2} más</p>
+                  )}
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4 border-t-2 border-black pt-3 text-[10px] text-[#5e5b55]">
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-[10px] text-[#f0ece4]/55">
             {Object.entries(colorMap).map(([color, config]) => (
               <div key={color} className="inline-flex items-center gap-2">
-                <span className={`inline-block h-2 w-2 rounded-[1px] ${config.dot}`} />
+                <span className={`inline-block size-2 rounded-full ${config.dot}`} />
                 <span className="capitalize">{color}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-            {eventosAMostrar.length === 0 ? (
-              <div className="col-span-full rounded-sm border border-[#b7bcb4] bg-[#efefee] p-4 text-center text-sm text-[#555]">No hay eventos con estado en el calendario.</div>
-            ) : (
-              eventosAMostrar.map((evento) => {
-                const color = evento.estadoCalendario?.color || 'naranja';
-                const classes = colorMap[color] || colorMap.naranja;
+          <div className="mt-5">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">Eventos en calendario</h2>
+                <p className="mt-1 text-xs text-[#f0ece4]/45">{eventosAMostrar.length} eventos visibles</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {eventosAMostrar.length === 0 ? (
+                <div className="col-span-full rounded-lg border border-dashed border-white/15 bg-[#0a0c10] p-8 text-center">
+                  <p className="text-sm font-medium text-[#f0ece4]/75">No hay eventos en el calendario</p>
+                  <p className="mt-2 text-xs text-[#f0ece4]/40">Los eventos que cumplan las condiciones aparecerán aquí.</p>
+                </div>
+              ) : (
+                eventosAMostrar.map((evento) => {
+                  const color = evento.estadoCalendario?.color || 'naranja';
+                  const classes = colorMap[color] || colorMap.naranja;
 
-                return (
-                  <article key={evento.codigo} className={`min-h-[188px] border-2 border-black p-3 ${classes.shell}`}>
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase ${classes.pill}`}>{color}</span>
-                      <strong className="text-[12px] font-semibold">#{evento.codigo}</strong>
-                    </div>
+                  return (
+                    <article key={evento.codigo} className={`rounded-lg border p-4 transition ${classes.hover} ${classes.shell}`}>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${classes.pill}`}>{color}</span>
+                        <strong className="text-xs font-semibold text-[#f0ece4]/55">#{evento.codigo}</strong>
+                      </div>
 
-                    <h3 className="mb-2 text-[13px] font-bold leading-tight">{evento.codigoEvaluacion || 'Sin código'}</h3>
-                    <div className="space-y-1 text-[11px] leading-4 text-[#333]">
-                      <p><span className="font-semibold">Estado:</span> {evento.estado}</p>
-                      <p><span className="font-semibold">Fecha:</span> {formatearFecha(evento.fechaEvento)}</p>
-                      <p><span className="font-semibold">Abono:</span> {formatearFecha(evento.fechaPagoAbono)}</p>
-                      <p><span className="font-semibold">Pago final:</span> {formatearFecha(evento.fechaPagoFinal)}</p>
-                    </div>
-                    <p className="mt-2 text-[10px] leading-4 text-[#4d4d4d]">{evento.estadoCalendario?.motivo}</p>
-                  </article>
-                );
-              })
-            )}
+                      <h3 className="mb-4 text-sm font-semibold text-[#c9a84c]">{evento.codigoEvaluacion || 'Sin código'}</h3>
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                        <dt className="text-[#f0ece4]/45">Estado</dt>
+                        <dd className="text-right font-medium">{formatearEstado(evento.estado)}</dd>
+                        <dt className="text-[#f0ece4]/45">Fecha</dt>
+                        <dd className="text-right">{formatearFecha(evento.fechaEvento)}</dd>
+                        <dt className="text-[#f0ece4]/45">Abono</dt>
+                        <dd className="text-right">{formatearFecha(evento.fechaPagoAbono)}</dd>
+                        <dt className="text-[#f0ece4]/45">Pago final</dt>
+                        <dd className="text-right">{formatearFecha(evento.fechaPagoFinal)}</dd>
+                      </dl>
+                      {descripcionesPorEstado[evento.estado?.toUpperCase()] && (
+                        <p className="mt-4 border-t border-white/10 pt-3 text-[11px] leading-5 text-[#f0ece4]/50">
+                          {descripcionesPorEstado[evento.estado.toUpperCase()]}
+                        </p>
+                      )}
+                    </article>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           {error && (
-            <div className="mt-4 rounded-sm border border-red-200 bg-red-100 px-3 py-2 text-xs text-red-700">
+            <div className="mt-5 rounded-lg border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200" role="alert">
               {error}
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
