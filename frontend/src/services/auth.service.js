@@ -17,7 +17,7 @@ export const login = async ({ rut, password }) => {
 
 export const me = async () => {
   try {
-    const { data } = await api.get('/auth/me');
+    const { data } = await api.get('/me');
     return data.data;
   } catch (error) {
     throw createAuthError(error, 'Error al restaurar la sesión');
