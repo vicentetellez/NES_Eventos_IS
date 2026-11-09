@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { avanzarEstadoEvento } from '../services/evento.service.js';
+import { listarCatalogoEquipos } from '../services/equipoEvento.service.js';
 import {
   actualizarPresupuesto,
   ajustarEventoPresupuesto,
@@ -43,6 +44,7 @@ const crearLinea = (base = {}) => ({
   precioUnitario: String(base.precioUnitario ?? 0),
   esArriendoTercero: Boolean(base.esArriendoTercero),
   codigoEspecialidad: base.codigoEspecialidad ?? null,
+  codigoEquipo: base.codigoEquipo ?? null,
 });
 
 const esLineaDelSistema = (detalle) =>
@@ -59,6 +61,7 @@ export default function PresupuestoEvento() {
   const [presupuesto, setPresupuesto] = useState(null);
   const [evento, setEvento] = useState(null);
   const [lineas, setLineas] = useState([]);
+  const [catalogoEquipos, setCatalogoEquipos] = useState([]);
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);

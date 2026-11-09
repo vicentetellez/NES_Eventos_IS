@@ -17,7 +17,8 @@ import Presupuestos from './pages/Presupuestos.jsx'
 import PresupuestoEvento from './pages/PresupuestoEvento.jsx'
 import ValidacionPresupuestos from './pages/ValidacionPresupuestos.jsx'
 import EventosOrganizando from './pages/EventosOrganizando.jsx'
-import ResenasEventos from './pages/ResenasEventos.jsx'
+import AsignacionEvento from './pages/AsignacionEvento.jsx'
+import ResenasEventos from './pages/MostrarResenaEvento.jsx'
 import Perfil from './pages/Perfil.jsx'
 
 import './styles/style.css'
@@ -83,6 +84,10 @@ const router = createBrowserRouter([
       {
         path: 'panel/eventos-organizando',
         element: <EventosOrganizando />,
+      },
+      {
+        path: 'panel/asignacion-evento/:codigo',
+        element: <AsignacionEvento />,
       },
       {
         path: '*',

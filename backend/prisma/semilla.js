@@ -623,7 +623,7 @@ async function seedEventos(){
                 },
                 {   codigoEvaluacion: 'EV-4D5E6F', 
                     estado: 'SOLICITADO', 
-                    fechaEvento: new Date('2024-11-20'), 
+                    fechaEvento: new Date('2027-11-20'), 
                     horaInicio: new Date('1970-01-01T12:00:00.000Z'), 
                     horasEvento: 7, 
                     cantidadPersonas: 400, 
