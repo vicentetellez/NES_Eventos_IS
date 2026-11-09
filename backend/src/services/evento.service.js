@@ -6,6 +6,31 @@ import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
 import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
 import { inicializarEquiposPresupuestados } from './equipoEvento.service.js';
 
+// Estadísticas públicas para la landing page (sin datos sensibles)
+export async function getEstadisticasPublicas() {
+    const [eventosRealizados, totalEvaluaciones, recomendaciones, centrosEvento, tiposEvento, banqueterias] = await Promise.all([
+        prisma.evento.count({ where: { estado: 'FINALIZADO' } }),
+        prisma.evaluacionEvento.count(),
+        prisma.evaluacionEvento.count({ where: { recomendacion: true } }),
+        prisma.centroEvento.count({ where: { activo: true } }),
+        prisma.tipoEvento.count({ where: { activo: true } }),
+        prisma.banqueteria.count({ where: { activo: true } })
+    ]);
+
+    const satisfaccionPromedio = totalEvaluaciones > 0
+        ? Math.round((recomendaciones / totalEvaluaciones) * 100)
+        : null;
+
+    return {
+        eventosRealizados,
+        totalEvaluaciones,
+        satisfaccionPromedio,
+        centrosEvento,
+        tiposEvento,
+        banqueterias
+    };
+}
+
 // Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
     const eventos = await prisma.evento.findMany({
