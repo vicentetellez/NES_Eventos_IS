@@ -296,6 +296,39 @@ export async function ajustarEventoYPresupuesto(codigoEvento, cambios) {
     });
 }
 
+async function calcularDetallesConEquipo(cliente, detalles) {
+    const codigosEquipo = [...new Set(
+        detalles.map(({ codigoEquipo }) => codigoEquipo).filter((codigo) => codigo !== undefined)
+    )];
+    const totalLineasConEquipo = detalles.filter(({ codigoEquipo }) => codigoEquipo !== undefined).length;
+    if (codigosEquipo.length !== totalLineasConEquipo) {
+        throw new AppError('Un equipo del catálogo no puede repetirse en varias líneas', 422);
+    }
+    const equipos = codigosEquipo.length > 0
+        ? await cliente.equipo.findMany({
+            where: { codigo: { in: codigosEquipo } },
+            select: { codigo: true, esExterno: true }
+        })
+        : [];
+    const equiposPorCodigo = new Map(equipos.map((equipo) => [equipo.codigo, equipo]));
+
+    for (const codigoEquipo of codigosEquipo) {
+        if (!equiposPorCodigo.has(codigoEquipo)) {
+            throw new AppError(`Equipo con código ${codigoEquipo} no encontrado`, 404);
+        }
+    }
+
+    return ejecutarCalculo(() => detalles.map((detalle) => {
+        const equipo = equiposPorCodigo.get(detalle.codigoEquipo);
+        return crearDetalle({
+            ...detalle,
+            ...(detalle.categoria === 'EQUIPAMIENTO'
+                ? { esArriendoTercero: equipo ? equipo.esExterno : false }
+                : {})
+        });
+    }));
+}
+
 export async function crearPresupuesto(codigoEvento, { detalles }) {
     const evento = await prisma.evento.findUnique({
         where: { codigo: codigoEvento },
@@ -312,7 +345,7 @@ export async function crearPresupuesto(codigoEvento, { detalles }) {
         throw new AppError('El presupuesto solo se puede crear mientras el evento está en COTIZANDO', 409);
     }
 
-    const detallesCalculados = await ejecutarCalculo(() => detalles.map(crearDetalle));
+    const detallesCalculados = await calcularDetallesConEquipo(prisma, detalles);
     const { total } = await ejecutarCalculo(() => calcularTotales(detallesCalculados));
 
     const presupuesto = await prisma.presupuesto.create({
@@ -343,7 +376,7 @@ export async function actualizarPresupuesto(codigoEvento, { detalles }) {
         }
 
         if (detalles !== undefined) {
-            const detallesCalculados = await ejecutarCalculo(() => detalles.map(crearDetalle));
+            const detallesCalculados = await calcularDetallesConEquipo(tx, detalles);
             await tx.detallePresupuesto.deleteMany({
                 where: {
                     codigoPresupuesto: existente.codigo,
@@ -387,7 +420,6 @@ export async function enviarPresupuestoAValidacion(codigoEvento) {
     if (presupuesto.detalles.length === 0) {
         throw new AppError('El presupuesto no tiene líneas de detalle', 422);
     }
-
     return cambiarEstadoPresupuesto(
         codigoEvento,
         ['BORRADOR', 'RECHAZADO'],

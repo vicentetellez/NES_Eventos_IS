@@ -4,8 +4,9 @@ import {
     agregarLineaPersonalAsignado,
     quitarLineaPersonalAsignado
 } from './presupuesto.service.js';
+import { calcularCantidadRequerida } from './calculoPresupuesto.service.js';
 
-const ESTADOS_ASIGNABLES = ['ORGANIZANDO', 'PENDIENTE_PAGO_FINAL', 'EN_PREPARACION'];
+const ESTADOS_ASIGNABLES = ['ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
 const ESTADOS_SIN_OCUPAR_TRABAJADOR = ['CANCELADO', 'FINALIZADO'];
 
 function nombreCompleto(persona) {
@@ -134,7 +135,15 @@ export async function listarCatalogoTrabajadores(codigoEvento, { codigoEspeciali
 }
 
 export async function listarTrabajadoresAsignados(codigoEvento) {
-    await obtenerEventoOError(prisma, codigoEvento);
+    const evento = await prisma.evento.findUnique({
+        where: { codigo: codigoEvento },
+        include: {
+            tipoEvento: {
+                include: { plantillas: { include: { especialidad: true } } }
+            }
+        }
+    });
+    if (!evento) throw new AppError(`Evento con código ${codigoEvento} no encontrado`, 404);
 
     const participaciones = await prisma.trabajadorParticipaEvento.findMany({
         where: { codigoEvento },
@@ -149,8 +158,42 @@ export async function listarTrabajadoresAsignados(codigoEvento) {
         }
     });
 
+    const asignadosPorEspecialidad = new Map();
+    for (const participacion of participaciones) {
+        asignadosPorEspecialidad.set(
+            participacion.especialidad.codigo,
+            (asignadosPorEspecialidad.get(participacion.especialidad.codigo) ?? 0) + 1
+        );
+    }
+
+    const requeridosPorEspecialidad = new Map();
+    for (const plantilla of evento.tipoEvento?.plantillas ?? []) {
+        if (!plantilla.especialidad) continue;
+        const codigoEspecialidad = plantilla.especialidad.codigo;
+        const cantidad = calcularCantidadRequerida(plantilla, evento.cantidadPersonas);
+        const actual = requeridosPorEspecialidad.get(codigoEspecialidad) ?? {
+            codigoEspecialidad,
+            nombre: plantilla.especialidad.nombre,
+            requeridos: 0
+        };
+        actual.requeridos += cantidad;
+        requeridosPorEspecialidad.set(codigoEspecialidad, actual);
+    }
+
+    const requerimientos = [...requeridosPorEspecialidad.values()]
+        .map((requerimiento) => {
+            const asignados = asignadosPorEspecialidad.get(requerimiento.codigoEspecialidad) ?? 0;
+            return {
+                ...requerimiento,
+                asignados,
+                faltantes: Math.max(requerimiento.requeridos - asignados, 0)
+            };
+        })
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
     return {
         total: participaciones.length,
+        requerimientos,
         asignaciones: participaciones.map((participacion) => ({
             rutTrabajador: participacion.rutTrabajador,
             nombre: nombreCompleto(participacion.trabajador.persona),
