@@ -68,10 +68,20 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
 
     const eventos = await prisma.evento.findMany({
         where: {
-            estado: 'PENDIENTE_PAGO_ABONO',
-            fechaPagoAbono: null,
-            fechaLimiteAbono: { not: null, lte: fechaMaxima },
-            montoAbono: { not: null }
+            OR: [
+                {
+                    estado: 'PENDIENTE_PAGO_ABONO',
+                    fechaPagoAbono: null,
+                    fechaLimiteAbono: { not: null, lte: fechaMaxima },
+                    montoAbono: { not: null }
+                },
+                {
+                    estado: 'PENDIENTE_PAGO_FINAL',
+                    fechaPagoAbono: { not: null },
+                    fechaPagoFinal: null,
+                    montoAbono: { not: null }
+                }
+            ]
         },
         orderBy: { fechaLimiteAbono: 'asc' },
         select: {
@@ -81,6 +91,7 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
             montoAbono: true,
             tipoEvento: { select: { nombre: true } },
             tipoEventoCliente: true,
+            presupuesto: { select: { total: true } },
             cliente: {
                 select: {
                     persona: {
@@ -96,8 +107,13 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
     });
 
     const alertas = eventos.map((evento) => {
-        const fechaLimite = new Date(evento.fechaLimiteAbono);
-        const diasRestantes = Math.round((fechaLimite - hoy) / 86400000);
+        const esPagoFinal = evento.estado === 'PENDIENTE_PAGO_FINAL';
+        const fechaLimite = evento.fechaLimiteAbono
+            ? new Date(evento.fechaLimiteAbono)
+            : null;
+        const diasRestantes = fechaLimite
+            ? Math.round((fechaLimite - hoy) / 86400000)
+            : null;
         const persona = evento.cliente.persona;
 
         return {
@@ -107,10 +123,15 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
             nombreCliente: [persona.nombre, persona.primerApellido, persona.segundoApellido]
                 .filter(Boolean)
                 .join(' '),
-            montoPendiente: evento.montoAbono,
-            fechaLimiteAbono: evento.fechaLimiteAbono,
+            tipoPago: esPagoFinal ? 'PAGO_FINAL' : 'ABONO',
+            montoPendiente: esPagoFinal && evento.presupuesto
+                ? evento.presupuesto.total - evento.montoAbono
+                : evento.montoAbono,
+            fechaLimiteAbono: fechaLimite,
             diasRestantes,
-            estadoAlerta: diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
+            estadoAlerta: esPagoFinal
+                ? 'PENDIENTE'
+                : diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
         };
     });
 
