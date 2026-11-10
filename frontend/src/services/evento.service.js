@@ -17,6 +17,26 @@ export const getEventosPorEstado = async (estado) => {
   }
 };
 
+export const getAlertasPagoPendiente = async (diasAnticipacion = 3) => {
+  try {
+    const { data } = await api.get('/evento/alertas/pagos-pendientes', {
+      params: { diasAnticipacion },
+    });
+    const resultado = data?.data;
+
+    if (!Array.isArray(resultado?.alertas)) {
+      throw new Error('El servidor no entregó las alertas de pagos pendientes.');
+    }
+
+    return resultado;
+  } catch (error) {
+    const mensajeError = error.response?.data?.message
+      || error.message
+      || 'Error al obtener las alertas de pagos pendientes';
+    throw new Error(mensajeError, { cause: error });
+  }
+};
+
 export const avanzarEstadoEvento = async (codigoEvento, payload) => {
   try {
     const { data } = await api.patch(`/evento/${codigoEvento}/avanzar-estado`, payload);
