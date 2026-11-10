@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getCalendarioEventos } from '../services/calendarioEvento.service';
-import { getEventosPorEstado } from '../services/evento.service';
+import { getAlertasPagoPendiente, getEventosPorEstado } from '../services/evento.service';
 
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -104,10 +104,15 @@ const formatearEstado = (estado) => {
 };
 
 export default function CalendarioEvento() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [eventos, setEventos] = useState([]);
   const [error, setError] = useState('');
   const [viewDate, setViewDate] = useState(new Date());
+  const [alertasPago, setAlertasPago] = useState([]);
+  const [alertasCargando, setAlertasCargando] = useState(true);
+  const [errorAlertas, setErrorAlertas] = useState('');
+  const [actualizarAlertas, setActualizarAlertas] = useState(0);
+  const puedeVerAlertas = ['ADMIN', 'STAFF'].includes(user?.rol);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -135,6 +140,37 @@ export default function CalendarioEvento() {
 
     return () => { activo = false; };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !puedeVerAlertas) return undefined;
+
+    let activo = true;
+    getAlertasPagoPendiente()
+      .then((resultado) => {
+        if (activo) {
+          setAlertasPago(resultado.alertas);
+          setErrorAlertas('');
+        }
+      })
+      .catch((fetchError) => {
+        if (activo) {
+          setAlertasPago([]);
+          setErrorAlertas(fetchError.message || 'No se pudieron cargar las alertas de pago.');
+        }
+      })
+      .finally(() => {
+        if (activo) setAlertasCargando(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [actualizarAlertas, isAuthenticated, puedeVerAlertas]);
+
+  const refrescarAlertas = () => {
+    setAlertasCargando(true);
+    setActualizarAlertas((anterior) => anterior + 1);
+  };
 
   const eventosConEstado = useMemo(() => normalizarEventosCalendario(eventos), [eventos]);
 
@@ -189,6 +225,103 @@ export default function CalendarioEvento() {
             <p className="mt-2 text-sm text-[#f0ece4]/50">Agenda, pagos y estado de los eventos</p>
           </div>
         </header>
+
+        {puedeVerAlertas && (
+          <section
+            className="mb-6 rounded-xl border border-[#c9a84c]/25 bg-[#131622] p-5 sm:p-6"
+            aria-labelledby="alertas-pago-title"
+          >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c9a84c]">
+                  Seguimiento de abonos
+                </p>
+                <h2 id="alertas-pago-title" className="mt-1 text-lg font-semibold">
+                  Alertas de pagos pendientes
+                  {!alertasCargando && !errorAlertas && (
+                    <span className="ml-2 rounded-full bg-[#c9a84c]/15 px-2 py-0.5 align-middle text-xs text-[#c9a84c]">
+                      {alertasPago.length}
+                    </span>
+                  )}
+                </h2>
+                <p className="mt-1 text-xs text-[#f0ece4]/50">
+                  Abonos que vencen dentro de 3 días o cuya fecha límite ya pasó.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={refrescarAlertas}
+                disabled={alertasCargando}
+                className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-[#f0ece4]/75 transition hover:border-[#c9a84c]/50 hover:text-[#f0ece4] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Actualizar alertas
+              </button>
+            </div>
+
+            {alertasCargando ? (
+              <p className="rounded-lg border border-white/10 bg-[#0a0c10] px-4 py-5 text-sm text-[#f0ece4]/50" role="status">
+                Cargando alertas de pago…
+              </p>
+            ) : errorAlertas ? (
+              <div className="rounded-lg border border-rose-400/20 bg-rose-400/10 px-4 py-4 text-sm text-rose-200" role="alert">
+                <p>{errorAlertas}</p>
+                <button
+                  type="button"
+                  onClick={refrescarAlertas}
+                  className="mt-3 font-semibold underline underline-offset-4"
+                >
+                  Reintentar
+                </button>
+              </div>
+            ) : alertasPago.length === 0 ? (
+              <p className="rounded-lg border border-white/10 bg-[#0a0c10] px-4 py-5 text-sm text-[#f0ece4]/55">
+                No hay abonos próximos a vencer ni vencidos.
+              </p>
+            ) : (
+              <ul className="grid gap-3 lg:grid-cols-2">
+                {alertasPago.map((alerta) => {
+                  const vencido = alerta.estadoAlerta === 'VENCIDO';
+                  const plazo = alerta.diasRestantes === 0
+                    ? 'Vence hoy'
+                    : vencido
+                      ? `Vencido hace ${Math.abs(alerta.diasRestantes)} ${Math.abs(alerta.diasRestantes) === 1 ? 'día' : 'días'}`
+                      : `Vence en ${alerta.diasRestantes} ${alerta.diasRestantes === 1 ? 'día' : 'días'}`;
+
+                  return (
+                    <li
+                      key={alerta.codigoEvento}
+                      className="rounded-lg border border-white/10 bg-[#0a0c10] p-4"
+                    >
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="font-semibold text-[#f0ece4]">
+                          {alerta.nombreEvento}
+                          <span className="ml-2 text-xs font-normal text-[#f0ece4]/40">
+                            #{alerta.codigoEvento}
+                          </span>
+                        </h3>
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${vencido ? 'border-rose-400/25 bg-rose-400/10 text-rose-300' : 'border-[#c9a84c]/25 bg-[#c9a84c]/10 text-[#c9a84c]'}`}>
+                          {plazo}
+                        </span>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-4">
+                        <dt className="text-[#f0ece4]/45">Cliente</dt>
+                        <dd className="col-span-1 text-right text-[#f0ece4]/80 sm:col-span-3">{alerta.nombreCliente}</dd>
+                        <dt className="text-[#f0ece4]/45">Fecha del evento</dt>
+                        <dd className="text-right text-[#f0ece4]/80">{formatearFecha(alerta.fechaEvento)}</dd>
+                        <dt className="text-[#f0ece4]/45">Fecha límite</dt>
+                        <dd className="text-right text-[#f0ece4]/80">{formatearFecha(alerta.fechaLimiteAbono)}</dd>
+                        <dt className="text-[#f0ece4]/45">Monto pendiente</dt>
+                        <dd className="col-span-1 text-right font-semibold text-[#c9a84c] sm:col-span-3">
+                          {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(alerta.montoPendiente)}
+                        </dd>
+                      </dl>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
 
         <section className="rounded-xl border border-white/10 bg-[#131622] p-3 shadow-2xl shadow-black/20 sm:p-6" aria-label="Calendario de eventos">
           <div className="mb-5 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
