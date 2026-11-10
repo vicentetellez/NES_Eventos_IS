@@ -17,7 +17,6 @@ export default function RankingTrabajadores() {
 
   useEffect(() => {
     let active = true;
-    setCargando(true);
     getRankingTrabajadores(filtrosAplicados)
       .then((resultado) => {
         if (active) {
@@ -53,8 +52,14 @@ export default function RankingTrabajadores() {
       aniosExperienciaMin: '',
       aniosExperienciaMax: '',
     };
+    setCargando(true);
     setFiltros(vacios);
     setFiltrosAplicados(vacios);
+  }
+
+  function actualizarRanking() {
+    setCargando(true);
+    setActualizacion((anterior) => anterior + 1);
   }
 
   return (
@@ -77,7 +82,7 @@ export default function RankingTrabajadores() {
           </div>
           <button
             type="button"
-            onClick={() => setActualizacion((anterior) => anterior + 1)}
+            onClick={actualizarRanking}
             disabled={cargando}
             className="h-11 rounded-lg border border-white/10 px-4 text-xs font-semibold text-[#f0ece4]/75 transition hover:border-[#c9a84c]/50 hover:text-[#f0ece4] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -90,6 +95,7 @@ export default function RankingTrabajadores() {
         className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:grid-cols-2 lg:grid-cols-5"
         onSubmit={(event) => {
           event.preventDefault();
+          setCargando(true);
           setFiltrosAplicados({ ...filtros });
         }}
       >
@@ -156,7 +162,7 @@ export default function RankingTrabajadores() {
             </p>
             <button
               type="button"
-              onClick={() => setActualizacion((anterior) => anterior + 1)}
+              onClick={actualizarRanking}
               className="mt-5 rounded-lg bg-[#c9a84c] px-4 py-2 text-xs font-bold text-[#0a0c10] transition hover:bg-[#d8b85d]"
             >
               Reintentar
