@@ -240,7 +240,7 @@ export default function CalendarioEvento() {
                   )}
                 </h2>
                 <p className="mt-1 text-xs text-[#f0ece4]/50">
-                  Abonos que vencen dentro de 3 días o cuya fecha límite ya pasó.
+                  Primeros abonos próximos a vencer o vencidos y eventos con pago final pendiente.
                 </p>
               </div>
               <button
@@ -270,17 +270,20 @@ export default function CalendarioEvento() {
               </div>
             ) : alertasPago.length === 0 ? (
               <p className="rounded-lg border border-white/10 bg-[#0a0c10] px-4 py-5 text-sm text-[#f0ece4]/55">
-                No hay abonos próximos a vencer ni vencidos.
+                No hay pagos próximos a vencer, vencidos ni pagos finales pendientes.
               </p>
             ) : (
               <ul className="grid gap-3 lg:grid-cols-2">
                 {alertasPago.map((alerta) => {
                   const vencido = alerta.estadoAlerta === 'VENCIDO';
-                  const plazo = alerta.diasRestantes === 0
-                    ? 'Vence hoy'
-                    : vencido
-                      ? `Vencido hace ${Math.abs(alerta.diasRestantes)} ${Math.abs(alerta.diasRestantes) === 1 ? 'día' : 'días'}`
-                      : `Vence en ${alerta.diasRestantes} ${alerta.diasRestantes === 1 ? 'día' : 'días'}`;
+                  const esPagoFinal = alerta.tipoPago === 'PAGO_FINAL';
+                  const plazo = esPagoFinal
+                    ? 'Pago final pendiente'
+                    : alerta.diasRestantes === 0
+                      ? 'Vence hoy'
+                      : vencido
+                        ? `Vencido hace ${Math.abs(alerta.diasRestantes)} ${Math.abs(alerta.diasRestantes) === 1 ? 'día' : 'días'}`
+                        : `Vence en ${alerta.diasRestantes} ${alerta.diasRestantes === 1 ? 'día' : 'días'}`;
 
                   return (
                     <li
@@ -303,11 +306,17 @@ export default function CalendarioEvento() {
                         <dd className="col-span-1 text-right text-[#f0ece4]/80 sm:col-span-3">{alerta.nombreCliente}</dd>
                         <dt className="text-[#f0ece4]/45">Fecha del evento</dt>
                         <dd className="text-right text-[#f0ece4]/80">{formatearFecha(alerta.fechaEvento)}</dd>
+                        <dt className="text-[#f0ece4]/45">Pago pendiente</dt>
+                        <dd className="text-right text-[#f0ece4]/80">{esPagoFinal ? 'Pago final' : 'Primer abono'}</dd>
                         <dt className="text-[#f0ece4]/45">Fecha límite</dt>
-                        <dd className="text-right text-[#f0ece4]/80">{formatearFecha(alerta.fechaLimiteAbono)}</dd>
+                        <dd className="text-right text-[#f0ece4]/80">
+                          {esPagoFinal ? 'No definida' : formatearFecha(alerta.fechaLimiteAbono)}
+                        </dd>
                         <dt className="text-[#f0ece4]/45">Monto pendiente</dt>
                         <dd className="col-span-1 text-right font-semibold text-[#c9a84c] sm:col-span-3">
-                          {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(alerta.montoPendiente)}
+                          {Number.isFinite(alerta.montoPendiente)
+                            ? new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(alerta.montoPendiente)
+                            : 'No disponible'}
                         </dd>
                       </dl>
                     </li>
