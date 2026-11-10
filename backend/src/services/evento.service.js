@@ -124,8 +124,8 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
                 .filter(Boolean)
                 .join(' '),
             tipoPago: esPagoFinal ? 'PAGO_FINAL' : 'ABONO',
-            montoPendiente: esPagoFinal && evento.presupuesto
-                ? evento.presupuesto.total - evento.montoAbono
+            montoPendiente: esPagoFinal
+                ? evento.presupuesto ? evento.presupuesto.total - evento.montoAbono : null
                 : evento.montoAbono,
             fechaLimiteAbono: fechaLimite,
             diasRestantes,
