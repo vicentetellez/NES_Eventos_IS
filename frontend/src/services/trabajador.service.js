@@ -14,10 +14,9 @@ export const getRankingTrabajadores = async (filtros = {}) => {
 
     return resultado;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message
-        || error.message
-        || 'Error al obtener el ranking de trabajadores',
-    );
+    const mensaje = error.response?.data?.message
+      || error.message
+      || 'Error al obtener el ranking de trabajadores';
+    throw new Error(mensaje, { cause: error });
   }
 };
