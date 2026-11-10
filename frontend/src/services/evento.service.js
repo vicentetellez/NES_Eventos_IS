@@ -13,7 +13,7 @@ export const getEventosPorEstado = async (estado) => {
         : [];
   } catch (error) {
     const mensajeError = error.response?.data?.message || 'Error al obtener los eventos';
-    throw new Error(mensajeError);
+    throw new Error(mensajeError, { cause: error });
   }
 };
 
@@ -63,7 +63,7 @@ export const solicitudEvento = async (payload) => {
     return data;
   } catch (error) {
     const mensajeError = error.response?.data?.message || 'Error al enviar la solicitud de evento';
-    throw new Error(mensajeError);
+    throw new Error(mensajeError, { cause: error });
   }
 };
 
@@ -75,6 +75,6 @@ export const getEventoByCodigoEvaluacion = async (codigoEvaluacion) => {
     return evento;
   } catch (error) {
     const mensajeError = error.response?.data?.message || error.message || 'Error al obtener el evento';
-    throw new Error(mensajeError);
+    throw new Error(mensajeError, { cause: error });
   }
 };
