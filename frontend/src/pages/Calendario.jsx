@@ -115,11 +115,7 @@ export default function CalendarioEvento() {
   const puedeVerAlertas = ['ADMIN', 'STAFF'].includes(user?.rol);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setEventos([]);
-      setError('');
-      return;
-    }
+    if (!isAuthenticated) return undefined;
 
     let activo = true;
     setError('');
