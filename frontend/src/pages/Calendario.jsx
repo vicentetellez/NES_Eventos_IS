@@ -118,7 +118,6 @@ export default function CalendarioEvento() {
     if (!isAuthenticated) return undefined;
 
     let activo = true;
-    setError('');
     getCalendarioEventos()
       .then(async (calendario) => {
         if (calendario.length > 0) return calendario;
