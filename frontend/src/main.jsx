@@ -21,6 +21,7 @@ import EventosOrganizando from './pages/EventosOrganizando.jsx'
 import AsignacionEvento from './pages/AsignacionEvento.jsx'
 import ResenasEventos from './pages/MostrarResenaEvento.jsx'
 import Perfil from './pages/Perfil.jsx'
+import PanelUsuarios from './pages/PanelUsuarios.jsx'
 
 import './styles/style.css'
 
@@ -85,6 +86,10 @@ const router = createBrowserRouter([
       {
         path: 'panel/mi-perfil',
         element: <Perfil />,
+      },
+      {
+        path: 'panel/usuarios',
+        element: <PanelUsuarios />,
       },
       {
         path: 'panel/eventos-organizando',
