@@ -430,6 +430,12 @@ async function seedComunas(){
     }
 }
 
+const personasTrabajadoresEvento = [
+    { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
+    { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
+    { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 }
+];
+
 async function seedPersonas(){
     try {
         const  countPersona = await prisma.persona.count();
@@ -438,10 +444,8 @@ async function seedPersonas(){
                 { rut: '11111111-1', nombre: 'ADMIN', primerApellido: 'ADMIN', segundoApellido: 'ADMIN', fechaNacimiento: new Date('2000-01-01'), telefono: '000000000', email: 'default.user@example.com', codigoComuna: 295 },
                 { rut: '12345678-5', nombre: 'Juan', primerApellido: 'Pérez', segundoApellido: 'Gómez', fechaNacimiento: new Date('1990-01-01'), telefono: '123456789', email: 'juan.perez@example.com', codigoComuna: 181 },
                 { rut: '98765432-5', nombre: 'María', primerApellido: 'López', segundoApellido: 'Martínez', fechaNacimiento: new Date('1992-02-02'), telefono: '987654321', email: 'maria.lopez@example.com', codigoComuna: 181 },
-                { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
+                ...personasTrabajadoresEvento,
                 { rut: '55667788-3', nombre: 'Ana', primerApellido: 'Torres', segundoApellido: 'Vega', fechaNacimiento: new Date('1995-04-04'), telefono: '556677889', email: 'ana.torres@example.com', codigoComuna: 181 },
-                { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
-                { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 },   
                 { rut: '15167826-2', nombre: 'Jorge', primerApellido: 'Hernández', segundoApellido: 'Cruz', fechaNacimiento: new Date('1991-07-07'), telefono: '889900112', email: 'jorge.hernandez@example.com', codigoComuna: 181 },
                 { rut: '13166479-6', nombre: 'Lucía', primerApellido: 'Vargas', segundoApellido: 'Molina', fechaNacimiento: new Date('1994-08-08'), telefono: '990011223', email: 'lucia.vargas@example.com', codigoComuna: 181 },
                 { rut: '16376527-6', nombre: 'Miguel', primerApellido: 'Castro', segundoApellido: 'Pérez', fechaNacimiento: new Date('1990-09-09'), telefono: '101112131', email: 'miguel.castro@example.com', codigoComuna: 181 },
@@ -919,67 +923,97 @@ async function seedCatalogosPresupuesto(){
     console.log('Inventario de equipos y plantillas sembrado correctamente.');
 }
 
+const trabajadoresEvento = [
+    { rut: '11223344-K', especialidades: ['Tecnico de sonido', 'Electrico'] },
+    { rut: '66778899-4', especialidades: ['Iluminador', 'Conductor'] },
+    { rut: '77889900-0', especialidades: ['Garzon', 'Personal de apoyo'] }
+];
+
+async function seedEspecialidadesTrabajadoresEvento() {
+    for (const { rut, especialidades } of trabajadoresEvento) {
+        const persona = personasTrabajadoresEvento.find(persona => persona.rut === rut);
+        if (!persona) throw new Error(`No hay datos de persona para el trabajador ${rut}`);
+
+        await prisma.persona.upsert({ where: { rut }, update: {}, create: persona });
+        const trabajador = await prisma.trabajador.upsert({
+            where: { rut },
+            update: {},
+            create: { rut, esExterno: false, sueldo: 900000 }
+        });
+        if (!trabajador.activo || trabajador.esExterno) {
+            throw new Error(`El trabajador de prueba ${rut} debe estar activo y ser interno`);
+        }
+
+        for (const nombre of especialidades) {
+            const especialidad = await prisma.especialidad.findUnique({ where: { nombre } });
+            if (!especialidad) throw new Error(`No se encontró la especialidad "${nombre}"`);
+
+            await prisma.trabajadorTieneEspecialidad.upsert({
+                where: { rutTrabajador_codigoEspecialidad: { rutTrabajador: rut, codigoEspecialidad: especialidad.codigo } },
+                update: {},
+                create: { rutTrabajador: rut, codigoEspecialidad: especialidad.codigo }
+            });
+        }
+    }
+}
+
 async function seedParticipacionesEventos() {
     const asignaciones = [
         { codigoEvaluacion: 'EV-9S0T1U', estado: 'FINALIZADO', especialidades: ['Iluminador', 'Garzon'] },
-        { codigoEvaluacion: 'EV-3M4N5O', estado: 'PENDIENTE_PAGO_FINAL', especialidades: ['Tecnico de sonido', 'Conductor/Auxiliar'] },
+        { codigoEvaluacion: 'EV-3M4N5O', estado: 'PENDIENTE_PAGO_FINAL', especialidades: ['Tecnico de sonido', 'Conductor'] },
         { codigoEvaluacion: 'EV-6P7Q8R', estado: 'EN_PREPARACION', especialidades: ['Electrico', 'Personal de apoyo'] }
     ];
 
-    try {
-        for (const asignacion of asignaciones) {
-            const evento = await prisma.evento.findUnique({
-                where: { codigoEvaluacion: asignacion.codigoEvaluacion }
+    for (const asignacion of asignaciones) {
+        const evento = await prisma.evento.findUnique({
+            where: { codigoEvaluacion: asignacion.codigoEvaluacion }
+        });
+        if (!evento || evento.estado !== asignacion.estado) continue;
+
+        const minutosTrabajador = (
+            evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)
+        ) * 60;
+
+        for (const nombreEspecialidad of asignacion.especialidades) {
+            const especialidad = await prisma.especialidad.findUnique({
+                where: { nombre: nombreEspecialidad }
             });
-            if (!evento || evento.estado !== asignacion.estado) continue;
-
-            const minutosTrabajador = (
-                evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)
-            ) * 60;
-
-            for (const nombreEspecialidad of asignacion.especialidades) {
-                const especialidad = await prisma.especialidad.findUnique({
-                    where: { nombre: nombreEspecialidad }
-                });
-                if (!especialidad) {
-                    throw new Error(`No se encontró la especialidad "${nombreEspecialidad}"`);
-                }
-
-                const trabajador = await prisma.trabajadorTieneEspecialidad.findFirst({
-                    where: {
-                        codigoEspecialidad: especialidad.codigo,
-                        trabajador: { is: { activo: true, esExterno: false } }
-                    },
-                    orderBy: { rutTrabajador: 'asc' },
-                    select: { rutTrabajador: true }
-                });
-                if (!trabajador) {
-                    throw new Error(`No hay un trabajador interno activo para "${nombreEspecialidad}"`);
-                }
-
-                await prisma.trabajadorParticipaEvento.upsert({
-                    where: {
-                        rutTrabajador_codigoEspecialidad_codigoEvento: {
-                            rutTrabajador: trabajador.rutTrabajador,
-                            codigoEspecialidad: especialidad.codigo,
-                            codigoEvento: evento.codigo
-                        }
-                    },
-                    update: { minutosTrabajador, tarifaHoraAcordada: 0 },
-                    create: {
-                        rutTrabajador: trabajador.rutTrabajador,
-                        codigoEspecialidad: especialidad.codigo,
-                        codigoEvento: evento.codigo,
-                        minutosTrabajador,
-                        tarifaHoraAcordada: 0
-                    }
-                });
+            if (!especialidad) {
+                throw new Error(`No se encontró la especialidad "${nombreEspecialidad}"`);
             }
+
+            const trabajador = trabajadoresEvento.find(trabajador => trabajador.especialidades.includes(nombreEspecialidad));
+            if (!trabajador) {
+                throw new Error(`No hay un trabajador de prueba para "${nombreEspecialidad}"`);
+            }
+
+            const participacionExistente = await prisma.trabajadorParticipaEvento.findFirst({
+                where: { rutTrabajador: trabajador.rut, codigoEvento: evento.codigo }
+            });
+            if (participacionExistente && participacionExistente.codigoEspecialidad !== especialidad.codigo) {
+                throw new Error(`El trabajador ${trabajador.rut} ya está asignado al evento ${evento.codigo} con otra especialidad`);
+            }
+
+            await prisma.trabajadorParticipaEvento.upsert({
+                where: {
+                    rutTrabajador_codigoEspecialidad_codigoEvento: {
+                        rutTrabajador: trabajador.rut,
+                        codigoEspecialidad: especialidad.codigo,
+                        codigoEvento: evento.codigo
+                    }
+                },
+                update: { minutosTrabajador, tarifaHoraAcordada: 0 },
+                create: {
+                    rutTrabajador: trabajador.rut,
+                    codigoEspecialidad: especialidad.codigo,
+                    codigoEvento: evento.codigo,
+                    minutosTrabajador,
+                    tarifaHoraAcordada: 0
+                }
+            });
         }
-        console.log('Participaciones de trabajadores de eventos de prueba sembradas correctamente.');
-    } catch (error) {
-        console.error('Error al sembrar participaciones de trabajadores:', error);
     }
+    console.log('Participaciones de trabajadores de eventos de prueba sembradas correctamente.');
 }
 
 
@@ -1000,6 +1034,7 @@ async function main(){
     await seedBanqueteria();
     await seedEventos();
     await seedCatalogosPresupuesto();
+    await seedEspecialidadesTrabajadoresEvento();
     await seedParticipacionesEventos();
 }
 
