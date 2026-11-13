@@ -995,7 +995,6 @@ async function main(){
     await seedBanqueteria();
     await seedEventos();
     await seedCatalogosPresupuesto();
-    await seedGerente();
     await seedParticipacionesEventos();
 }
 
