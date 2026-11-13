@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import menuConfig from '../menuConfig';
+import menuConfig from '../utils/menuConfig';
 
 export default function Home() {
   const { user } = useAuth();
