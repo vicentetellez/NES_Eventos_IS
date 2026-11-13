@@ -862,7 +862,12 @@ async function seedCatalogosPresupuesto(){
     const especialidades = [
         { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000 },
         { nombre: 'Garzon', tarifaHoraReferencial: 8000 },
-        { nombre: 'Productor general', tarifaHoraReferencial: 22000 }
+        { nombre: 'Productor general', tarifaHoraReferencial: 22000 },
+        { nombre: 'Iluminador', tarifaHoraReferencial: 0 },
+        { nombre: 'Conductor', tarifaHoraReferencial: 0 },
+        { nombre: 'Auxiliar', tarifaHoraReferencial: 0 },
+        { nombre: 'Electrico', tarifaHoraReferencial: 0 },
+        { nombre: 'Personal de apoyo', tarifaHoraReferencial: 0 }
     ];
 
     const especialidadesCreadas = {};
