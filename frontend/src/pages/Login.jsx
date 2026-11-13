@@ -13,7 +13,7 @@ function Login() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/home')
+    if (isAuthenticated) navigate('/home', { replace: true })
   }, [isAuthenticated, navigate])
 
   const handleSubmit = async (event) => {
@@ -28,7 +28,7 @@ function Login() {
       return
     }
 
-    navigate('/home')
+    navigate('/home', { replace: true })
   }
 
   return (
