@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NES_Eventos_Logo from '../assets/Logo-NES-Eventos-Rectangular.png'
-import menuConfig from '../menuConfig'
+import menuConfig from '../utils/menuConfig'
 
 function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth()
