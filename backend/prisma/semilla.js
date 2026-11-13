@@ -447,7 +447,7 @@ async function seedPersonas(){
                 { rut: '16376527-6', nombre: 'Miguel', primerApellido: 'Castro', segundoApellido: 'Pérez', fechaNacimiento: new Date('1990-09-09'), telefono: '101112131', email: 'miguel.castro@example.com', codigoComuna: 181 },
                 { rut: '20126066-3', nombre: 'Sofía', primerApellido: 'Rivas', segundoApellido: 'Lara', fechaNacimiento: new Date('1992-10-10'), telefono: '121314151', email: 'sofia.rivas@example.com', codigoComuna: 181 },
                 { rut: '13073408-1', nombre: 'Valentina', primerApellido: 'Silva', segundoApellido: 'Morales', fechaNacimiento: new Date('1993-11-11'), telefono: '131415161', email: 'valentina.silva@example.com', codigoComuna: 181 },
-
+                { rut: '29999999-8', nombre: 'Danilo', primerApellido: 'Fuentes', segundoApellido: 'Hidalgo', fechaNacimiento: new Date('1980-01-01'), telefono: '911111111', email: 'gerente@example.com', codigoComuna: 181 }
             ];  
             await prisma.persona.createMany({ data: personas });
             console.log('Personas sembradas correctamente.');
@@ -511,7 +511,8 @@ async function seedUsuarios(){
             const usuarios = [
                 { rut: '11111111-1', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date(), debeCambiarPassword: false },
                 { rut: '66778899-4', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: false },
-                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: true }
+                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: true },
+                { rut: '29999999-8', password: 'password123', rol: 'GERENTE', ultimoAcceso: new Date(), debeCambiarPassword: false }
             ];
             for (const usuario of usuarios) {
                 const passwordHash = await argon2.hash(usuario.password, {
@@ -911,68 +912,6 @@ async function seedCatalogosPresupuesto(){
     }
 
     console.log('Inventario de equipos y plantillas sembrado correctamente.');
-}
-
-function calcularDigitoVerificador(cuerpo) {
-    let suma = 0;
-    let factor = 2;
-    for (const digito of String(cuerpo).split('').reverse()) {
-        suma += Number(digito) * factor;
-        factor = factor === 7 ? 2 : factor + 1;
-    }
-    const resto = 11 - (suma % 11);
-    if (resto === 11) return '0';
-    if (resto === 10) return 'K';
-    return String(resto);
-}
-
-function crearRutDemo(cuerpo) {
-    return `${cuerpo}-${calcularDigitoVerificador(cuerpo)}`;
-}
-
-async function hashPasswordSeed(password) {
-    return argon2.hash(password, {
-        type: ARGON2_TYPE,
-        memoryCost: parseInt(ARGON2_MEMORY_COST),
-        timeCost: parseInt(ARGON2_TIME_COST),
-        parallelism: parseInt(ARGON2_PARALLELISM),
-    });
-}
-
-async function seedGerente(){
-    try {
-        const rut = crearRutDemo(29999999);
-        await prisma.persona.upsert({
-            where: { rut },
-            update: {},
-            create: {
-                rut,
-                nombre: 'Gerente',
-                primerApellido: 'General',
-                segundoApellido: 'NES',
-                fechaNacimiento: new Date('1980-01-01'),
-                telefono: '911111111',
-                email: 'gerente@example.com',
-                codigoComuna: 181
-            }
-        });
-
-        const usuarioExistente = await prisma.usuario.findUnique({ where: { rut } });
-        if (!usuarioExistente) {
-            await prisma.usuario.create({
-                data: {
-                    rut,
-                    password: await hashPasswordSeed('password123'),
-                    rol: 'GERENTE',
-                    ultimoAcceso: new Date(),
-                    debeCambiarPassword: false
-                }
-            });
-        }
-        console.log(`Usuario GERENTE listo (rut ${rut}).`);
-    } catch (error) {
-        console.error('Error al sembrar el usuario GERENTE:', error);
-    }
 }
 
 async function seedParticipacionesEventos() {
