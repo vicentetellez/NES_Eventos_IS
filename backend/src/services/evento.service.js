@@ -86,6 +86,7 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
         orderBy: { fechaLimiteAbono: 'asc' },
         select: {
             codigo: true,
+            estado: true,
             fechaEvento: true,
             fechaLimiteAbono: true,
             montoAbono: true,
