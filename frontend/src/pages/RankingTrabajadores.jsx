@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FiSearch } from 'react-icons/fi';
 import { getRankingTrabajadores } from '../services/trabajador.service.js';
 
 export default function RankingTrabajadores() {
@@ -92,15 +93,19 @@ export default function RankingTrabajadores() {
       </header>
 
       <form
-        className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:grid-cols-2 lg:grid-cols-5"
+        className="mb-8 grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault();
           setCargando(true);
-          setFiltrosAplicados({ ...filtros });
+          setFiltrosAplicados((actuales) => ({
+            ...actuales,
+            especialidad: filtros.especialidad,
+            aniosExperienciaMin: filtros.aniosExperienciaMin,
+            aniosExperienciaMax: filtros.aniosExperienciaMax,
+          }));
         }}
       >
         {[
-          { name: 'nombre', label: 'Nombre', placeholder: 'Nombre o apellido', type: 'text' },
           { name: 'especialidad', label: 'Cargo o especialidad', placeholder: 'Ej. banquetería', type: 'text' },
           { name: 'aniosExperienciaMin', label: 'Experiencia desde', placeholder: 'Años', type: 'number' },
           { name: 'aniosExperienciaMax', label: 'Experiencia hasta', placeholder: 'Años', type: 'number' },
@@ -134,6 +139,38 @@ export default function RankingTrabajadores() {
             Limpiar
           </button>
         </div>
+      </form>
+
+      <form
+        className="mb-8 flex flex-col gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:flex-row sm:items-end"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setCargando(true);
+          setFiltrosAplicados((actuales) => ({
+            ...actuales,
+            nombre: filtros.nombre,
+          }));
+        }}
+      >
+        <label className="grid flex-1 content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
+          Nombre o apellido
+          <input
+            name="nombre"
+            type="text"
+            value={filtros.nombre}
+            onChange={updateFilter}
+            placeholder="Buscar por nombre o apellido"
+            className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c]"
+          />
+        </label>
+        <button
+          type="submit"
+          aria-label="Buscar por nombre o apellido"
+          title="Buscar por nombre o apellido"
+          className="flex h-10 items-center justify-center rounded-lg bg-[#c9a84c] px-4 text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:opacity-50 sm:min-w-12"
+        >
+          <FiSearch aria-hidden="true" size={18} />
+        </button>
       </form>
 
       <section aria-labelledby="ranking-results-title">
