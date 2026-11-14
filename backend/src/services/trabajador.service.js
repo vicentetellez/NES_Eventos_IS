@@ -6,6 +6,21 @@ function calcularPromedio(evaluaciones) {
     return Number((total / evaluaciones.length).toFixed(2));
 }
 
+function normalizarTexto(texto) {
+    return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function coincideNombre(persona, nombre) {
+    const partesNombre = normalizarTexto(nombre).trim().split(/\s+/).filter(Boolean);
+    const camposPersona = [persona.nombre, persona.primerApellido, persona.segundoApellido]
+        .filter(Boolean)
+        .map(normalizarTexto);
+
+    return partesNombre.every((parte) =>
+        camposPersona.some((campo) => campo.includes(parte))
+    );
+}
+
 export async function getRankingTrabajadores(filtros = {}) {
     const { nombre, especialidad, aniosExperienciaMin, aniosExperienciaMax } = filtros;
     const where = {
@@ -13,20 +28,6 @@ export async function getRankingTrabajadores(filtros = {}) {
         evaluaciones: { some: {} },
         especialidades: { some: {} }
     };
-
-    if (nombre) {
-        where.persona = {
-            is: {
-                AND: nombre.split(/\s+/).map((parteNombre) => ({
-                    OR: [
-                        { nombre: { contains: parteNombre, mode: 'insensitive' } },
-                        { primerApellido: { contains: parteNombre, mode: 'insensitive' } },
-                        { segundoApellido: { contains: parteNombre, mode: 'insensitive' } }
-                    ]
-                }))
-            }
-        };
-    }
 
     if (especialidad) {
         where.especialidades = {
@@ -73,7 +74,11 @@ export async function getRankingTrabajadores(filtros = {}) {
         }
     });
 
-    const ranking = trabajadores.map((trabajador) => {
+    const trabajadoresFiltrados = nombre
+        ? trabajadores.filter((trabajador) => coincideNombre(trabajador.persona, nombre))
+        : trabajadores;
+
+    const ranking = trabajadoresFiltrados.map((trabajador) => {
         const evaluacionesPorEspecialidad = new Map();
         for (const evaluacion of trabajador.evaluaciones) {
             const codigo = evaluacion.codigoEspecialidad;
