@@ -2,6 +2,23 @@ import { useEffect, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { getRankingTrabajadores } from '../services/trabajador.service.js';
 
+function validarNombreBusqueda(valor) {
+  const nombre = valor.trim();
+  const longitud = [...nombre].length;
+
+  if (longitud < 3 || longitud > 45) {
+    return 'El nombre y/o apellido debe tener entre 3 y 45 caracteres. Ingrese un nombre y/o apellido válido, por favor.';
+  }
+  if (/\p{N}/u.test(nombre)) {
+    return 'No se aceptan números. Ingrese un nombre y/o apellido válido, por favor.';
+  }
+  if (!/^[\p{L}\p{M} -]+$/u.test(nombre)) {
+    return 'No se aceptan caracteres especiales, excepto el guion (-). Ingrese un nombre y/o apellido válido, por favor.';
+  }
+
+  return '';
+}
+
 export default function RankingTrabajadores() {
   const [filtros, setFiltros] = useState({
     nombre: '',
@@ -13,6 +30,7 @@ export default function RankingTrabajadores() {
   const [trabajadores, setTrabajadores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [errorBusquedaNombre, setErrorBusquedaNombre] = useState('');
   const [total, setTotal] = useState(0);
   const [actualizacion, setActualizacion] = useState(0);
 
@@ -44,6 +62,7 @@ export default function RankingTrabajadores() {
 
   function updateFilter(event) {
     setFiltros((actuales) => ({ ...actuales, [event.target.name]: event.target.value }));
+    if (event.target.name === 'nombre') setErrorBusquedaNombre('');
   }
 
   function clearFilters() {
@@ -56,6 +75,7 @@ export default function RankingTrabajadores() {
     setCargando(true);
     setFiltros(vacios);
     setFiltrosAplicados(vacios);
+    setErrorBusquedaNombre('');
   }
 
   function actualizarRanking() {
@@ -141,37 +161,58 @@ export default function RankingTrabajadores() {
         </div>
       </form>
 
-      <form
-        className="mb-8 flex flex-col gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:flex-row sm:items-end"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setCargando(true);
-          setFiltrosAplicados((actuales) => ({
-            ...actuales,
-            nombre: filtros.nombre,
-          }));
-        }}
-      >
-        <label className="grid flex-1 content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
-          Nombre o apellido
-          <input
-            name="nombre"
-            type="text"
-            value={filtros.nombre}
-            onChange={updateFilter}
-            placeholder="Buscar por nombre o apellido"
-            className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c]"
-          />
-        </label>
-        <button
-          type="submit"
-          aria-label="Buscar por nombre o apellido"
-          title="Buscar por nombre o apellido"
-          className="flex h-10 items-center justify-center rounded-lg bg-[#c9a84c] px-4 text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:opacity-50 sm:min-w-12"
+      <div className="mb-8">
+        <form
+          className="flex flex-col gap-4 rounded-xl border border-white/10 bg-[#131622] p-5 sm:flex-row sm:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const nombre = filtros.nombre.trim();
+            const mensajeError = validarNombreBusqueda(nombre);
+            if (mensajeError) {
+              setErrorBusquedaNombre(mensajeError);
+              return;
+            }
+
+            setErrorBusquedaNombre('');
+            setCargando(true);
+            setFiltrosAplicados((actuales) => ({
+              ...actuales,
+              nombre,
+            }));
+          }}
         >
-          <FiSearch aria-hidden="true" size={18} />
-        </button>
-      </form>
+          <label className="grid flex-1 content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
+            Nombre o apellido
+            <input
+              name="nombre"
+              type="text"
+              value={filtros.nombre}
+              onChange={updateFilter}
+              placeholder="Buscar por nombre o apellido"
+              aria-invalid={Boolean(errorBusquedaNombre)}
+              aria-describedby={errorBusquedaNombre ? 'ranking-name-search-error' : undefined}
+              className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c]"
+            />
+          </label>
+          <button
+            type="submit"
+            aria-label="Buscar por nombre o apellido"
+            title="Buscar por nombre o apellido"
+            className="flex h-10 items-center justify-center rounded-lg bg-[#c9a84c] px-4 text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:opacity-50 sm:min-w-12"
+          >
+            <FiSearch aria-hidden="true" size={18} />
+          </button>
+        </form>
+        {errorBusquedaNombre && (
+          <p
+            id="ranking-name-search-error"
+            className="mt-2 rounded-lg border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200"
+            role="alert"
+          >
+            {errorBusquedaNombre}
+          </p>
+        )}
+      </div>
 
       <section aria-labelledby="ranking-results-title">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
