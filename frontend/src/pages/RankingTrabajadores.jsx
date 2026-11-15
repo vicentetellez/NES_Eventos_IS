@@ -28,6 +28,7 @@ export default function RankingTrabajadores() {
   });
   const [filtrosAplicados, setFiltrosAplicados] = useState({});
   const [trabajadores, setTrabajadores] = useState([]);
+  const [especialidadesDisponibles, setEspecialidadesDisponibles] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [errorBusquedaNombre, setErrorBusquedaNombre] = useState('');
@@ -40,6 +41,7 @@ export default function RankingTrabajadores() {
       .then((resultado) => {
         if (active) {
           setTrabajadores(resultado.trabajadores);
+          setEspecialidadesDisponibles(resultado.especialidadesDisponibles);
           setTotal(resultado.total ?? resultado.trabajadores.length);
           setError('');
         }
@@ -126,22 +128,38 @@ export default function RankingTrabajadores() {
         }}
       >
         {[
-          { name: 'especialidad', label: 'Cargo o especialidad', placeholder: 'Ej. banquetería', type: 'text' },
+          { name: 'especialidad', label: 'Cargo o especialidad', type: 'select' },
           { name: 'aniosExperienciaMin', label: 'Experiencia desde', placeholder: 'Años', type: 'number' },
           { name: 'aniosExperienciaMax', label: 'Experiencia hasta', placeholder: 'Años', type: 'number' },
         ].map(({ name, label, placeholder, type }) => (
           <label key={name} className="grid content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
             {label}
-            <input
-              name={name}
-              type={type}
-              min={type === 'number' ? 0 : undefined}
-              max={type === 'number' ? 80 : undefined}
-              value={filtros[name]}
-              onChange={updateFilter}
-              placeholder={placeholder}
-              className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c]"
-            />
+            {type === 'select' ? (
+              <select
+                name={name}
+                value={filtros[name]}
+                onChange={updateFilter}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition focus:border-[#c9a84c]"
+              >
+                <option value="">Todas las especialidades</option>
+                {especialidadesDisponibles.map((especialidad) => (
+                  <option key={especialidad.codigo} value={especialidad.nombre}>
+                    {especialidad.nombre}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                name={name}
+                type={type}
+                min={type === 'number' ? 0 : undefined}
+                max={type === 'number' ? 80 : undefined}
+                value={filtros[name]}
+                onChange={updateFilter}
+                placeholder={placeholder}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c]"
+              />
+            )}
           </label>
         ))}
         <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-1">

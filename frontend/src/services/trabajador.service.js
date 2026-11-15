@@ -11,6 +11,9 @@ export const getRankingTrabajadores = async (filtros = {}) => {
     if (!Array.isArray(resultado?.trabajadores)) {
       throw new Error('El servidor no entregó el ranking de trabajadores.');
     }
+    if (!Array.isArray(resultado?.especialidadesDisponibles)) {
+      throw new Error('El servidor no entregó la lista de cargos o especialidades.');
+    }
 
     return resultado;
   } catch (error) {

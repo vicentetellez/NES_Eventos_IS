@@ -46,33 +46,39 @@ export async function getRankingTrabajadores(filtros = {}) {
         };
     }
 
-    const trabajadores = await prisma.trabajador.findMany({
-        where,
-        select: {
-            rut: true,
-            esExterno: true,
-            aniosExperiencia: true,
-            persona: {
-                select: {
-                    nombre: true,
-                    primerApellido: true,
-                    segundoApellido: true
-                }
-            },
-            especialidades: {
-                select: {
-                    especialidad: { select: { codigo: true, nombre: true } }
-                }
-            },
-            evaluaciones: {
-                select: {
-                    calificacion: true,
-                    codigoEspecialidad: true,
-                    especialidad: { select: { codigo: true, nombre: true } }
+    const [trabajadores, especialidadesDisponibles] = await Promise.all([
+        prisma.trabajador.findMany({
+            where,
+            select: {
+                rut: true,
+                esExterno: true,
+                aniosExperiencia: true,
+                persona: {
+                    select: {
+                        nombre: true,
+                        primerApellido: true,
+                        segundoApellido: true
+                    }
+                },
+                especialidades: {
+                    select: {
+                        especialidad: { select: { codigo: true, nombre: true } }
+                    }
+                },
+                evaluaciones: {
+                    select: {
+                        calificacion: true,
+                        codigoEspecialidad: true,
+                        especialidad: { select: { codigo: true, nombre: true } }
+                    }
                 }
             }
-        }
-    });
+        }),
+        prisma.especialidad.findMany({
+            select: { codigo: true, nombre: true },
+            orderBy: { nombre: 'asc' }
+        })
+    ]);
 
     const trabajadoresFiltrados = nombre
         ? trabajadores.filter((trabajador) => coincideNombre(trabajador.persona, nombre))
@@ -129,6 +135,7 @@ export async function getRankingTrabajadores(filtros = {}) {
             aniosExperienciaMin: aniosExperienciaMin ?? null,
             aniosExperienciaMax: aniosExperienciaMax ?? null
         },
+        especialidadesDisponibles,
         trabajadores: ranking
     };
 }
