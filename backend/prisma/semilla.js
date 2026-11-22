@@ -41,13 +41,11 @@ async function seedComunas(){
         const countComuna = await prisma.comuna.count();
         if (countComuna === 0){
             const comunas = [
-                // Región de Arica y Parinacota (ID: 1)
                 { nombre: 'Arica', codigoRegion: 1 },
                 { nombre: 'Camarones', codigoRegion: 1 },
                 { nombre: 'Putre', codigoRegion: 1 },
                 { nombre: 'General Lagos', codigoRegion: 1 },
 
-                // Región de Tarapacá (ID: 2)
                 { nombre: 'Alto Hospicio', codigoRegion: 2 },
                 { nombre: 'Iquique', codigoRegion: 2 },
                 { nombre: 'Huara', codigoRegion: 2 },
@@ -56,7 +54,6 @@ async function seedComunas(){
                 { nombre: 'Pica', codigoRegion: 2 },
                 { nombre: 'Pozo Almonte', codigoRegion: 2 },
 
-                // Región de Antofagasta (ID: 3)
                 { nombre: 'Tocopilla', codigoRegion: 3 },
                 { nombre: 'María Elena', codigoRegion: 3 },
                 { nombre: 'Calama', codigoRegion: 3 },
@@ -67,7 +64,6 @@ async function seedComunas(){
                 { nombre: 'Sierra Gorda', codigoRegion: 3 },
                 { nombre: 'Taltal', codigoRegion: 3 },
 
-                // Región de Atacama (ID: 4)
                 { nombre: 'Chañaral', codigoRegion: 4 },
                 { nombre: 'Diego de Almagro', codigoRegion: 4 },
                 { nombre: 'Copiapó', codigoRegion: 4 },
@@ -78,7 +74,6 @@ async function seedComunas(){
                 { nombre: 'Huasco', codigoRegion: 4 },
                 { nombre: 'Alto del Carmen', codigoRegion: 4 },
 
-                // Región de Coquimbo (ID: 5)
                 { nombre: 'La Serena', codigoRegion: 5 },
                 { nombre: 'La Higuera', codigoRegion: 5 },
                 { nombre: 'Coquimbo', codigoRegion: 5 },
@@ -95,7 +90,6 @@ async function seedComunas(){
                 { nombre: 'Los Vilos', codigoRegion: 5 },
                 { nombre: 'Canela', codigoRegion: 5 },
 
-                // Región de Valparaíso (ID: 6)
                 { nombre: 'La Ligua', codigoRegion: 6 },
                 { nombre: 'Petorca', codigoRegion: 6 },
                 { nombre: 'Cabildo', codigoRegion: 6 },
@@ -135,7 +129,6 @@ async function seedComunas(){
                 { nombre: 'Santo Domingo', codigoRegion: 6 },
                 { nombre: 'Isla de Pascua', codigoRegion: 6 },
 
-                // Región del Libertador General Bernardo O'Higgins (ID: 7)
                 { nombre: 'Rancagua', codigoRegion: 7 },
                 { nombre: 'Graneros', codigoRegion: 7 },
                 { nombre: 'Mostazal', codigoRegion: 7 },
@@ -170,7 +163,6 @@ async function seedComunas(){
                 { nombre: 'Marchihue', codigoRegion: 7 },
                 { nombre: 'Paredones', codigoRegion: 7 },
 
-                // Región del Maule (ID: 8)
                 { nombre: 'Curicó', codigoRegion: 8 },
                 { nombre: 'Teno', codigoRegion: 8 },
                 { nombre: 'Romeral', codigoRegion: 8 },
@@ -202,7 +194,6 @@ async function seedComunas(){
                 { nombre: 'Pelluhue', codigoRegion: 8 },
                 { nombre: 'Chanco', codigoRegion: 8 },
 
-                // Región de Ñuble (ID: 9)
                 { nombre: 'Bulnes', codigoRegion: 9 },
                 { nombre: 'Chillán', codigoRegion: 9 },
                 { nombre: 'Chillán Viejo', codigoRegion: 9 },
@@ -225,7 +216,6 @@ async function seedComunas(){
                 { nombre: 'Ránquil', codigoRegion: 9 },
                 { nombre: 'Trehuaco', codigoRegion: 9 },
 
-                // Región del Biobío (ID: 10)
                 { nombre: 'Alto Biobío', codigoRegion: 10 },
                 { nombre: 'Los Angeles', codigoRegion: 10 },
                 { nombre: 'Cabrero', codigoRegion: 10 },
@@ -260,7 +250,6 @@ async function seedComunas(){
                 { nombre: 'Contulmo', codigoRegion: 10 },
                 { nombre: 'Tirua', codigoRegion: 10 },
 
-                // Región de la Araucanía (ID: 11)
                 { nombre: 'Angol', codigoRegion: 11 },
                 { nombre: 'Renaico', codigoRegion: 11 },
                 { nombre: 'Collipulli', codigoRegion: 11 },
@@ -294,7 +283,6 @@ async function seedComunas(){
                 { nombre: 'Galvarino', codigoRegion: 11 },
                 { nombre: 'Padre las Casas', codigoRegion: 11 },
 
-                // Región de los Ríos (ID: 12)
                 { nombre: 'Valdivia', codigoRegion: 12 },
                 { nombre: 'Mariquina', codigoRegion: 12 },
                 { nombre: 'Lanco', codigoRegion: 12 },
@@ -308,7 +296,6 @@ async function seedComunas(){
                 { nombre: 'Río Bueno', codigoRegion: 12 },
                 { nombre: 'Lago Ranco', codigoRegion: 12 },
 
-                // Región de los Lagos (ID: 13)
                 { nombre: 'Osorno', codigoRegion: 13 },
                 { nombre: 'San Pablo', codigoRegion: 13 },
                 { nombre: 'Puyehue', codigoRegion: 13 },
@@ -340,7 +327,6 @@ async function seedComunas(){
                 { nombre: 'Futaleufú', codigoRegion: 13 },
                 { nombre: 'Palena', codigoRegion: 13 },
 
-                // Región Aysén del General Carlos Ibáñez del Campo (ID: 14)
                 { nombre: 'Coyhaique', codigoRegion: 14 },
                 { nombre: 'Lago Verde', codigoRegion: 14 },
                 { nombre: 'Aysén', codigoRegion: 14 },
@@ -352,7 +338,6 @@ async function seedComunas(){
                 { nombre: 'O\'Higgins', codigoRegion: 14 },
                 { nombre: 'Tortel', codigoRegion: 14 },
 
-                // Región de Magallanes y Antártica Chilena (ID: 15)
                 { nombre: 'Natales', codigoRegion: 15 },
                 { nombre: 'Torres del Paine', codigoRegion: 15 },
                 { nombre: 'Punta Arenas', codigoRegion: 15 },
@@ -365,7 +350,6 @@ async function seedComunas(){
                 { nombre: 'Cabo de Hornos', codigoRegion: 15 },
                 { nombre: 'Antártica', codigoRegion: 15 },
 
-                // Región Metropolitana de Santiago (ID: 16)
                 { nombre: 'Santiago', codigoRegion: 16 },
                 { nombre: 'Independencia', codigoRegion: 16 },
                 { nombre: 'Conchalí', codigoRegion: 16 },
@@ -967,8 +951,6 @@ async function seedGerente(){
     }
 }
 
-// Personal demostrativo. Las especialidades "fijas" (sueldo mensual) no se cobran por hora en el presupuesto
-// porque su costo está cubierto por la tarifa base del evento. Los externos se cobran con la tarifa acordada.
 async function seedPersonalTrabajadores(){
     const nombres = ['Camilo', 'Francisca', 'Matías', 'Javiera', 'Sebastián', 'Constanza', 'Nicolás', 'Daniela', 'Felipe', 'Catalina',
         'Cristóbal', 'Fernanda', 'Rodrigo', 'Paula', 'Diego', 'Macarena', 'Andrés', 'Bárbara', 'Tomás', 'Camila'];
