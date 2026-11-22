@@ -2,7 +2,6 @@ import PDFDocument from 'pdfkit';
 import { AppError } from '../helpers/responses.js';
 import { obtenerPresupuesto } from './presupuesto.service.js';
 
-// El segundo abono se emite una vez pagado el primero (evento en organización o posterior)
 const ESTADOS_EVENTO_CON_SEGUNDO_ABONO = [
     'ORGANIZANDO',
     'PENDIENTE_PAGO_FINAL',
@@ -30,7 +29,6 @@ const MARGEN = 50;
 const formatoCLP = (valor) => `$${Number(valor ?? 0).toLocaleString('es-CL')}`;
 const formatoFecha = (valor) => (valor ? new Date(valor).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : '-');
 
-// Helvetica estándar no dibuja flechas Unicode: se reemplazan (también en ajustes guardados con el formato anterior)
 function limpiarDescripcion(texto) {
     return (texto ?? '').replaceAll('→', '->');
 }
@@ -61,7 +59,7 @@ function dibujarPdf(doc, { presupuesto, evento }) {
     doc.moveDown(0.8);
 
     doc.fontSize(10).fillColor(COLOR_TEXTO);
-    doc.text(`Evento N° ${evento.codigo}`);
+    doc.text(`Evento ${evento.numeroVisible == null ? 'sin número' : `N° ${evento.numeroVisible}`}`);
     doc.text(`Cliente: ${evento.clienteNombre ?? '-'}`);
     doc.text(`Fecha del evento: ${formatoFecha(evento.fechaEvento)}`);
     doc.text(`Invitados: ${evento.cantidadPersonas}   |   Horas del evento: ${evento.horasEvento}   |   Montaje/desmontaje: ${evento.horasMontajeDesmontaje} h`);
@@ -116,7 +114,6 @@ function dibujarPdf(doc, { presupuesto, evento }) {
     doc.text(formatoCLP(saldo), 445, y + 12, { width: 90, align: 'right' });
 }
 
-// Genera el PDF del segundo abono con el presupuesto vigente. Devuelve { buffer, nombreArchivo }.
 export async function generarPdfSegundoAbono(codigoEvento) {
     const datos = await obtenerPresupuesto(codigoEvento);
     const { presupuesto, evento } = datos;
@@ -132,7 +129,7 @@ export async function generarPdfSegundoAbono(codigoEvento) {
     }
 
     const buffer = await new Promise((resolve, reject) => {
-        const doc = new PDFDocument({ size: 'A4', margin: MARGEN, info: { Title: `Segundo abono - Evento ${evento.codigo}` } });
+        const doc = new PDFDocument({ size: 'A4', margin: MARGEN, info: { Title: 'Segundo abono' } });
         const partes = [];
         doc.on('data', (parte) => partes.push(parte));
         doc.on('end', () => resolve(Buffer.concat(partes)));

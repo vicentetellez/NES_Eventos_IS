@@ -10,10 +10,8 @@ import {
 } from './calculoPresupuesto.service.js';
 
 const ESTADOS_EVENTO_EDITABLES = ['COTIZANDO', 'ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
-// Tras el primer abono, el aumento de invitados u horas se cobra en el segundo abono
 const ESTADOS_EVENTO_AJUSTABLES = ['ORGANIZANDO', 'PENDIENTE_PAGO_FINAL'];
 
-// Los errores de validación del cálculo son TypeError: se informan como 422
 async function ejecutarCalculo(funcionCalculo) {
     try {
         return await funcionCalculo();
@@ -40,6 +38,12 @@ function formatearPresupuesto(presupuesto, evento) {
         estado: presupuesto.estado,
         fechaDictamen: presupuesto.fechaDictamen,
         rutUsuarioDictamen: presupuesto.rutUsuarioDictamen,
+        creador: presupuesto.usuarioCreador
+            ? {
+                rut: presupuesto.usuarioCreador.rut,
+                nombre: nombreCompleto(presupuesto.usuarioCreador.persona)
+            }
+            : null,
         observacionDictamen: presupuesto.observacionDictamen,
         tarifaHoraBase: presupuesto.tarifaHoraBase,
         porcentajeMargenArriendo: PORCENTAJE_MARGEN_ARRIENDO,
@@ -49,9 +53,12 @@ function formatearPresupuesto(presupuesto, evento) {
         total: presupuesto.total,
         primerAbono: calcularPrimerAbono(presupuesto.total),
         montoAbono,
-        // Si el presupuesto se modificó después del primer abono, la diferencia se paga en el segundo abono
         saldoPendiente: montoAbono !== null ? presupuesto.total - montoAbono : null
     };
+}
+
+function nombreCompleto(persona) {
+    return [persona.nombre, persona.primerApellido, persona.segundoApellido].filter(Boolean).join(' ');
 }
 
 async function obtenerEventoOError(codigoEvento, cliente = prisma) {
@@ -65,7 +72,14 @@ async function obtenerEventoOError(codigoEvento, cliente = prisma) {
 async function obtenerPresupuestoDeEventoOError(codigoEvento, cliente = prisma) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigoEvento },
-        include: { detalles: true, evento: { include: { cliente: { include: { persona: true } } } } }
+        include: {
+            detalles: true,
+            usuarioCreador: { include: { persona: true } },
+            evento: { include: {
+                cliente: { include: { persona: true } },
+                comprobanteAbono: { select: { estado: true, observacion: true, fechaCarga: true, fechaRevision: true } }
+            } }
+        }
     });
     if (!presupuesto) {
         throw new AppError(`El evento ${codigoEvento} aún no tiene presupuesto`, 404);
@@ -76,6 +90,7 @@ async function obtenerPresupuestoDeEventoOError(codigoEvento, cliente = prisma) 
 function resumirEvento(evento) {
     return {
         codigo: evento.codigo,
+        numeroVisible: evento.numeroVisible,
         estado: evento.estado,
         fechaEvento: evento.fechaEvento,
         horasEvento: evento.horasEvento,
@@ -83,15 +98,24 @@ function resumirEvento(evento) {
         cantidadPersonas: evento.cantidadPersonas,
         fechaLimiteAbono: evento.fechaLimiteAbono ?? null,
         montoAbono: evento.montoAbono ?? null,
-        clienteNombre: evento.cliente?.persona?.nombre ?? null
+        clienteNombre: evento.cliente?.persona ? nombreCompleto(evento.cliente.persona) : null,
+        cliente: evento.cliente?.persona ? {
+            nombre: nombreCompleto(evento.cliente.persona),
+            rut: evento.cliente.persona.rut,
+            telefono: evento.cliente.persona.telefono,
+            email: evento.cliente.persona.email
+        } : null,
+        comprobante: evento.comprobanteAbono ?? null
     };
 }
 
-// Listado para las bandejas del staff y del gerente (p. ej. presupuestos pendientes de validación)
 export async function listarPresupuestos(estado) {
     const presupuestos = await prisma.presupuesto.findMany({
         where: estado ? { estado } : undefined,
-        include: { evento: { include: { cliente: { include: { persona: true } } } } },
+        include: { evento: { include: {
+            cliente: { include: { persona: true } },
+            comprobanteAbono: { select: { estado: true, observacion: true, fechaCarga: true, fechaRevision: true } }
+        } } },
         orderBy: { codigo: 'desc' }
     });
 
@@ -106,7 +130,6 @@ export async function listarPresupuestos(estado) {
     };
 }
 
-// Recalcula y guarda el total del presupuesto a partir de sus líneas. Debe llamarse en cada cambio de líneas.
 export async function recalcularTotalPresupuesto(cliente, codigoPresupuesto, datosExtra = {}) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigo: codigoPresupuesto },
@@ -121,8 +144,6 @@ export async function recalcularTotalPresupuesto(cliente, codigoPresupuesto, dat
     });
 }
 
-// Líneas que se cargan por primera vez al abrir el formulario de presupuesto. No guarda nada.
-// Con cantidadPersonasSimulada se obtiene una vista previa con otra cantidad de invitados (sin modificar el evento).
 export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasSimulada = undefined) {
     const evento = await prisma.evento.findUnique({
         where: { codigo: codigoEvento },
@@ -133,7 +154,8 @@ export async function obtenerPrecargaPresupuesto(codigoEvento, cantidadPersonasS
                 }
             },
             banqueterias: { include: { banqueteria: true } },
-            cliente: { include: { persona: true } }
+            cliente: { include: { persona: true } },
+            comprobanteAbono: { select: { estado: true, observacion: true, fechaCarga: true, fechaRevision: true } }
         }
     });
 
@@ -175,9 +197,6 @@ export async function obtenerPresupuesto(codigoEvento) {
     };
 }
 
-// Vista previa del costo estimado con otra cantidad de invitados. No guarda nada.
-// El cambio real y su cobro adicional se aplican con ajustarEventoYPresupuesto.
-// La banquetería no se recalcula (se edita aparte) y las líneas manuales y de externos asignados no se consideran.
 export async function obtenerVistaPreviaCantidadPersonas(codigoEvento, cantidadPersonas) {
     const presupuesto = await obtenerPresupuestoDeEventoOError(codigoEvento);
 
@@ -207,10 +226,6 @@ function calcularCostoEstimadoEvento(evento, { cantidadPersonas, horasEvento, ho
     }));
 }
 
-// Cambia invitados y/o horas del evento y actualiza el presupuesto en la misma transacción.
-// Solo se permite aumentar (no hay devoluciones). La diferencia de costo se agrega como una línea AJUSTE_EVENTO
-// y se cobra en el segundo abono: saldoPendiente = total - montoAbono. No requiere nueva validación del gerente.
-// La banquetería no participa (se edita aparte).
 export async function ajustarEventoYPresupuesto(codigoEvento, cambios) {
     return prisma.$transaction(async (tx) => {
         const existente = await obtenerPresupuestoDeEventoOError(codigoEvento, tx);
@@ -329,7 +344,7 @@ async function calcularDetallesConEquipo(cliente, detalles) {
     }));
 }
 
-export async function crearPresupuesto(codigoEvento, { detalles }) {
+export async function crearPresupuesto(codigoEvento, { detalles }, rutUsuario) {
     const evento = await prisma.evento.findUnique({
         where: { codigo: codigoEvento },
         include: { tipoEvento: true, presupuesto: true }
@@ -354,16 +369,15 @@ export async function crearPresupuesto(codigoEvento, { detalles }) {
             tarifaHoraBase: evento.tipoEvento?.tarifaHoraBaseReferencial ?? 0,
             total,
             codigoEvento,
+            rutUsuarioCreador: rutUsuario,
             detalles: { create: detallesCalculados }
         },
-        include: { detalles: true }
+        include: { detalles: true, usuarioCreador: { include: { persona: true } } }
     });
 
     return { presupuesto: formatearPresupuesto(presupuesto, evento) };
 }
 
-// Reemplaza las líneas editables. Las líneas administradas por el sistema (trabajadores asignados)
-// no se tocan. Después de la primera validación del gerente no se vuelve a exigir validación.
 export async function actualizarPresupuesto(codigoEvento, { detalles }) {
     return prisma.$transaction(async (tx) => {
         const existente = await obtenerPresupuestoDeEventoOError(codigoEvento, tx);
@@ -453,8 +467,6 @@ function buscarLineaGenerica(cliente, codigoPresupuesto, codigoEspecialidad) {
     });
 }
 
-// Al asignar un trabajador: se descuenta una plaza estimada de la línea genérica de la especialidad y,
-// si es externo (tarifa acordada > 0), se agrega su línea. Los internos no se cobran (cubiertos por la tarifa base).
 export async function agregarLineaPersonalAsignado(cliente, { codigoEvento, trabajador, especialidad, tarifaHoraAcordada }) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigoEvento },
@@ -496,7 +508,6 @@ export async function agregarLineaPersonalAsignado(cliente, { codigoEvento, trab
     await recalcularTotalPresupuesto(cliente, presupuesto.codigo);
 }
 
-// Inversa de agregarLineaPersonalAsignado
 export async function quitarLineaPersonalAsignado(cliente, { codigoEvento, rutTrabajador, especialidad }) {
     const presupuesto = await cliente.presupuesto.findUnique({
         where: { codigoEvento },

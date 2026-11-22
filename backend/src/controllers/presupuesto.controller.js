@@ -82,7 +82,7 @@ export async function obtenerPresupuestoController(req, res, next) {
 export async function crearPresupuestoController(req, res, next) {
     try {
         const { codigo } = req.validatedParams;
-        const resultado = await crearPresupuesto(codigo, req.body);
+        const resultado = await crearPresupuesto(codigo, req.body, req.user.rut);
         response.success(res, 201, 'Presupuesto creado correctamente', resultado);
     } catch (error) {
         next(error);

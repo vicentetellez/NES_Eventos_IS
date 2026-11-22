@@ -6,11 +6,11 @@ import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
 import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
 import { inicializarEquiposPresupuestados } from './equipoEvento.service.js';
 
-// Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
     const eventos = await prisma.evento.findMany({
         select: {
             codigo: true,
+            numeroVisible: true,
             codigoEvaluacion: true,
             fechaEvento: true,
             cliente: {
@@ -119,7 +119,7 @@ export async function getEventoByCodigo(codigo) {
 
 export async function getEventoByCodigoEvaluacion(codigoEvaluacion) {
     const evento = await prisma.evento.findUnique({
-        select: { codigo: true },
+        select: { codigo: true, numeroVisible: true },
         where: { codigoEvaluacion }
     });
 
@@ -130,7 +130,6 @@ export async function getEventoByCodigoEvaluacion(codigoEvaluacion) {
     return ({ evento });
 }
 
-// Genera un código legible tipo: "EV-8A3F2B"
 function generarCodigoEvaluacionUnico(){
   const bytes = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `EV-${bytes}`;
@@ -162,8 +161,6 @@ async function crearEventoEnTransaccion(prismaTransaction, rutCliente, datosEven
 const CAMPOS_QUE_AFECTAN_PRESUPUESTO = ['cantidadPersonas', 'horasEvento', 'horasMontajeDesmontaje'];
 
 export async function updateEvento(codigo, datosEvento) {
-    // Con presupuesto en curso, invitados y horas solo se cambian por el endpoint de ajuste del presupuesto,
-    // que recalcula el cobro adicional. Mientras se cotiza (COTIZANDO) o antes de que exista presupuesto, son libres.
     if (CAMPOS_QUE_AFECTAN_PRESUPUESTO.some((campo) => datosEvento[campo] !== undefined)) {
         const evento = await prisma.evento.findUnique({
             where: { codigo },
@@ -215,6 +212,7 @@ const transicionesPermitidas = {
 
 export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuario, datosAbono = {}) {
     return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT codigo FROM evento WHERE codigo = ${codigoEvento} FOR UPDATE`;
         const evento = await tx.evento.findUnique({ where: { codigo: codigoEvento } });
         if (!evento) {
             throw new AppError(`Evento con código ${codigoEvento} no encontrado`, 404);
@@ -248,6 +246,17 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
             datosActualizacion.montoAbono = calcularPrimerAbono(presupuesto.total);
         }
         if (estadoDestino === 'ORGANIZANDO') {
+            const usuario = await tx.usuario.findUnique({ where: { rut: rutUsuario }, select: { rol: true } });
+            if (usuario?.rol !== 'GERENTE') {
+                throw new AppError('Solo el gerente puede aprobar el comprobante y confirmar el abono', 403);
+            }
+            const aprobado = await tx.comprobanteAbono.updateMany({
+                where: { codigoEvento, estado: 'PENDIENTE' },
+                data: { estado: 'APROBADO', rutUsuarioRevision: rutUsuario, fechaRevision: new Date() }
+            });
+            if (aprobado.count !== 1) {
+                throw new AppError('Se necesita un comprobante pendiente de revisión para confirmar el abono', 409);
+            }
             datosActualizacion.rutUsuarioPagoAbono = rutUsuario;
             datosActualizacion.fechaPagoAbono = new Date();
         }
@@ -279,30 +288,22 @@ export async function avanzarEstadoEvento(codigoEvento, estadoDestino, rutUsuari
 
 
 
-// AQUI PA ABAJO VA LA LOGICA DE CREAR UN EVENTO MEDIANTE RUTA PUBLICA
 async function crearEventoTransaccion(prismaTransaction, rutCliente, datosClienteNuevo, datosEventoNuevo) {
-    // Primero vemos lo del cliente
-    // Llamamos a los servicios de cliente para verificar si el cliente ya existe o crear uno nuevo
     const cliente = await obtenerOrCrearCliente(prismaTransaction, rutCliente, datosClienteNuevo);
-    // Llamamos a la función para crear el evento con los datos del cliente ya verificados o creados
     const evento = await crearEventoEnTransaccion(prismaTransaction, rutCliente, datosEventoNuevo);
 
     return evento;
 }
 async function asignarBanqueteriasTransaccion(prismaTransaction, codigoEvento, listaBanqueterias) {
-    // Llamamos a los servicios de banqueteria para asignar los banquetes
     const banquete = await crearAsignacionesBanqueteria(prismaTransaction, codigoEvento, listaBanqueterias);
     
     return banquete;
 }
 
-// funcion publica para la creacion de una solicitud de evento mediante el formulario del cliente
 export async function solicitudEvento(rutCliente, datosClienteNuevo, datosEventoNuevo, listaBanqueterias) {
     return prisma.$transaction(async (x) => {
-        // Primero vamos a llamar la funcion orquestadora de ver los datos del cliente y del evento
         const nuevoEvento = await crearEventoTransaccion(x, rutCliente, datosClienteNuevo, datosEventoNuevo);
 
-        // Después llamamos la funcion orquestadora de las banqueterias, para asignarlas al evento
         const banquetesAsignados = await asignarBanqueteriasTransaccion(x, nuevoEvento.codigo, listaBanqueterias);
 
         return { nuevoEvento, banquetesAsignados };
