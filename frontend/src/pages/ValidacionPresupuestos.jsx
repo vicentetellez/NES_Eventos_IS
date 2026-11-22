@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { avanzarEstadoEvento } from '../services/evento.service.js';
+import { descargarComprobante, rechazarComprobante } from '../services/comprobanteAbono.service.js';
 import { listarPresupuestos } from '../services/presupuesto.service.js';
-import { formatoCLP, formatoFecha } from '../utils/presupuesto.js';
+import { formatoCLP, formatoFecha, numeroEvento } from '../utils/presupuesto.js';
 
 export default function ValidacionPresupuestos() {
   const [presupuestos, setPresupuestos] = useState([]);
@@ -48,7 +49,7 @@ export default function ValidacionPresupuestos() {
 
   const confirmarAbono = async (presupuesto) => {
     const confirmado = window.confirm(
-      `¿Confirmar que el cliente pagó el primer abono (${formatoCLP(presupuesto.evento.montoAbono)}) del evento #${presupuesto.codigoEvento}? El evento pasará a ORGANIZANDO.`
+      `¿Aprobar el comprobante del primer abono (${formatoCLP(presupuesto.evento.montoAbono)}) del evento ${numeroEvento(presupuesto.evento.numeroVisible)}? El evento pasará a ORGANIZANDO.`
     );
     if (!confirmado) return;
 
@@ -60,11 +61,47 @@ export default function ValidacionPresupuestos() {
       const datos = await obtenerDatos();
       setPresupuestos(datos.pendientes);
       setEventosPorOrganizar(datos.porOrganizar);
-      setAviso(`Evento #${presupuesto.codigoEvento} pasó a ORGANIZANDO.`);
+      setAviso(`Evento ${numeroEvento(presupuesto.evento.numeroVisible)} pasó a ORGANIZANDO.`);
     } catch (errorAccion) {
       setError(errorAccion.message);
     } finally {
       setConfirmando(null);
+    }
+  };
+
+  const rechazarAbono = async (presupuesto) => {
+    const observacion = window.prompt('Indica el motivo del rechazo del comprobante:');
+    if (observacion === null) return;
+    if (!observacion.trim()) {
+      setError('Debes indicar el motivo del rechazo.');
+      return;
+    }
+    if (observacion.trim().length > 1000) {
+      setError('El motivo no puede superar los 1000 caracteres.');
+      return;
+    }
+    setConfirmando(presupuesto.codigoEvento);
+    setError('');
+    setAviso('');
+    try {
+      await rechazarComprobante(presupuesto.codigoEvento, observacion.trim());
+      const datos = await obtenerDatos();
+      setPresupuestos(datos.pendientes);
+      setEventosPorOrganizar(datos.porOrganizar);
+      setAviso('Comprobante rechazado. El staff podrá subir uno nuevo.');
+    } catch (errorAccion) {
+      setError(errorAccion.message);
+    } finally {
+      setConfirmando(null);
+    }
+  };
+
+  const descargarAbono = async (presupuesto) => {
+    setError('');
+    try {
+      await descargarComprobante(presupuesto.codigoEvento);
+    } catch (errorAccion) {
+      setError(errorAccion.message);
     }
   };
 
@@ -114,7 +151,7 @@ export default function ValidacionPresupuestos() {
               >
                 <div>
                   <p className="text-xs uppercase tracking-wider text-[#f0ece4]/50">
-                    Evento #{presupuesto.codigoEvento}
+                    Evento {numeroEvento(presupuesto.evento.numeroVisible)}
                   </p>
                   <h2 className="mt-1 text-lg font-semibold transition-colors group-hover:text-[#c9a84c]">
                     {presupuesto.evento.clienteNombre ?? 'Cliente'}
@@ -145,7 +182,7 @@ export default function ValidacionPresupuestos() {
                 <span className="text-sm font-normal text-[#f0ece4]/50">({eventosPorOrganizar.length})</span>
               </h2>
               <p className="mt-1 text-sm text-[#f0ece4]/50">
-                Presupuestos validados que esperan el pago del primer abono. Al confirmarlo, el evento pasa a ORGANIZANDO.
+                Revisa el comprobante enviado por el staff. Al aprobarlo, el evento pasa a ORGANIZANDO.
               </p>
             </div>
 
@@ -176,7 +213,7 @@ export default function ValidacionPresupuestos() {
                           to={`/panel/presupuestos/${presupuesto.codigoEvento}`}
                           className="text-[#c9a84c] hover:underline"
                         >
-                          #{presupuesto.codigoEvento}
+                          {numeroEvento(presupuesto.evento.numeroVisible)}
                         </Link>
                       </td>
                       <td className="px-4 py-3">{presupuesto.evento.clienteNombre ?? '—'}</td>
@@ -186,14 +223,28 @@ export default function ValidacionPresupuestos() {
                         {formatoCLP(presupuesto.evento.montoAbono)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => confirmarAbono(presupuesto)}
-                          disabled={confirmando !== null}
-                          className="h-9 rounded-lg bg-[#c9a84c] px-4 text-xs font-bold text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {confirmando === presupuesto.codigoEvento ? 'Confirmando...' : 'Pasar a organizado'}
-                        </button>
+                        {presupuesto.evento.comprobante?.estado === 'PENDIENTE' ? (
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button type="button" onClick={() => descargarAbono(presupuesto)} className="text-[#c9a84c] hover:underline">
+                              Descargar comprobante
+                            </button>
+                            <button type="button" onClick={() => rechazarAbono(presupuesto)} disabled={confirmando !== null} className="text-red-300 disabled:opacity-50">
+                              Rechazar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => confirmarAbono(presupuesto)}
+                              disabled={confirmando !== null}
+                              className="h-9 rounded-lg bg-[#c9a84c] px-4 text-xs font-bold text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {confirmando === presupuesto.codigoEvento ? 'Procesando...' : 'Aprobar y organizar'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[#f0ece4]/50">
+                            {presupuesto.evento.comprobante?.estado === 'RECHAZADO' ? 'Comprobante rechazado' : 'Esperando comprobante'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
