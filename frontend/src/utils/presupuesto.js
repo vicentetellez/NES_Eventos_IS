@@ -12,6 +12,9 @@ export const formatoFecha = (fecha) => {
   return new Date(fecha).toLocaleDateString('es-CL', { timeZone: 'UTC' });
 };
 
+export const numeroEvento = (numero) =>
+  numero === null || numero === undefined ? 'sin número' : `#${numero}`;
+
 export const ETIQUETAS_ESTADO_PRESUPUESTO = {
   BORRADOR: 'Borrador',
   PENDIENTE_VALIDACION: 'Pendiente de validación',

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { avanzarEstadoEvento } from '../services/evento.service.js';
 import { listarCatalogoEquipos } from '../services/equipoEvento.service.js';
+import { subirComprobante } from '../services/comprobanteAbono.service.js';
 import {
   actualizarPresupuesto,
   ajustarEventoPresupuesto,
@@ -22,6 +23,7 @@ import {
   estiloEstadoPresupuesto,
   formatoCLP,
   formatoFecha,
+  numeroEvento,
 } from '../utils/presupuesto.js';
 
 const PORCENTAJE_MARGEN_ARRIENDO = 20;
@@ -72,6 +74,7 @@ export default function PresupuestoEvento() {
   const [fechaLimiteAbono, setFechaLimiteAbono] = useState('');
   const [ajuste, setAjuste] = useState({ cantidadPersonas: '', horasEvento: '', horasMontajeDesmontaje: '' });
   const [vistaPrevia, setVistaPrevia] = useState(null);
+  const [archivoComprobante, setArchivoComprobante] = useState(null);
 
   const obtenerDatos = useCallback(async () => {
     try {
@@ -79,7 +82,6 @@ export default function PresupuestoEvento() {
       return { presupuesto: resultado.presupuesto, evento: resultado.evento, lineas: resultado.presupuesto.detalles };
     } catch (errorPresupuesto) {
       if (errorPresupuesto.status !== 404) throw errorPresupuesto;
-      // Aún no existe: se parte de la plantilla del tipo de evento
       const precarga = await getPrecargaPresupuesto(codigoEvento);
       return { presupuesto: null, evento: precarga.evento, lineas: precarga.cotizacion.detalles };
     }
@@ -282,6 +284,21 @@ export default function PresupuestoEvento() {
 
   const manejarDescargarPdf = () => ejecutarAccion(() => descargarPdfSegundoAbono(codigoEvento), 'PDF del segundo abono descargado.');
 
+  const manejarSubirComprobante = () => {
+    if (!archivoComprobante) {
+      setError('Selecciona un comprobante PNG o PDF.');
+      return;
+    }
+    if (archivoComprobante.size > 10 * 1024 * 1024) {
+      setError('El comprobante no puede superar los 10 MB.');
+      return;
+    }
+    ejecutarAccion(async () => {
+      await subirComprobante(codigoEvento, archivoComprobante);
+      setArchivoComprobante(null);
+    }, 'Comprobante enviado para revisión del gerente.');
+  };
+
   const manejarValidar = () =>
     ejecutarAccion(() => validarPresupuesto(codigoEvento), 'Presupuesto validado correctamente.');
 
@@ -377,7 +394,7 @@ export default function PresupuestoEvento() {
         <header className="mb-8 mt-4 flex flex-col justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row sm:items-end">
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#c9a84c]">
-              Presupuesto del evento #{evento.codigo}
+              Presupuesto del evento {numeroEvento(evento.numeroVisible)}
             </p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               {evento.clienteNombre ?? 'Cliente'}
@@ -408,6 +425,44 @@ export default function PresupuestoEvento() {
             </span>
           </div>
         </header>
+
+        <section className="mb-6 rounded-xl border border-white/10 bg-[#131622] p-5 text-sm text-[#f0ece4]/70">
+          <h2 className="mb-3 text-lg font-semibold text-[#f0ece4]">Datos de la cotización</h2>
+          <p>Cliente: {evento.cliente?.nombre ?? 'No registrado'}</p>
+          <p>RUT: {evento.cliente?.rut ?? 'No registrado'}</p>
+          <p>Teléfono: {evento.cliente?.telefono ?? 'No registrado'}</p>
+          <p>Correo: {evento.cliente?.email ?? 'No registrado'}</p>
+          <p>Creada por: {presupuesto?.creador?.nombre ?? 'No registrado'}</p>
+        </section>
+
+        {estadoEvento === 'PENDIENTE_PAGO_ABONO' && (
+          <section className="mb-6 rounded-xl border border-white/10 bg-[#131622] p-5 text-sm text-[#f0ece4]/70">
+            <h2 className="mb-2 text-lg font-semibold text-[#f0ece4]">Comprobante del primer abono</h2>
+            {evento.comprobante?.estado === 'PENDIENTE' && <p>Comprobante enviado; pendiente de revisión del gerente.</p>}
+            {evento.comprobante?.estado === 'RECHAZADO' && (
+              <p className="text-red-300">Rechazado: {evento.comprobante.observacion}</p>
+            )}
+            {['STAFF', 'GERENTE'].includes(user?.rol) && (!evento.comprobante || evento.comprobante.estado === 'RECHAZADO') && (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className={`${botonSecundario} inline-flex cursor-pointer items-center focus-within:ring-2 focus-within:ring-[#c9a84c]`}>
+                  Adjuntar archivo
+                  <input
+                    type="file"
+                    accept="image/png,application/pdf"
+                    disabled={procesando}
+                    onChange={(e) => setArchivoComprobante(e.target.files?.[0] ?? null)}
+                    className="sr-only"
+                  />
+                </label>
+                <button type="button" className={botonPrimario} disabled={procesando || !archivoComprobante} onClick={manejarSubirComprobante}>
+                  Enviar comprobante
+                </button>
+                {archivoComprobante && <span>{archivoComprobante.name}</span>}
+                <span>PNG o PDF, máximo 10 MB.</span>
+              </div>
+            )}
+          </section>
+        )}
 
         {error && (
           <div className="mb-5 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300" role="alert">
@@ -700,6 +755,11 @@ export default function PresupuestoEvento() {
                 className="w-full rounded-lg border border-white/10 bg-[#0a0c10] px-3 py-2 text-sm text-[#f0ece4] outline-none focus:border-[#c9a84c]"
               />
             </label>
+            {observacionRechazo.trim().length < 100 && (
+              <p className="mt-2 text-sm text-red-300">
+                Falta {100 - observacionRechazo.trim().length} minimo de caracteres.
+              </p>
+            )}
             <div className="mt-4 flex flex-wrap gap-3">
               <button type="button" className={botonPrimario} onClick={manejarValidar} disabled={procesando}>
                 Validar presupuesto
@@ -708,7 +768,7 @@ export default function PresupuestoEvento() {
                 type="button"
                 className="h-10 rounded-lg border border-red-400/40 px-5 text-xs font-semibold text-red-300 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={manejarRechazar}
-                disabled={procesando || !observacionRechazo.trim()}
+                disabled={procesando || observacionRechazo.trim().length < 100}
               >
                 Rechazar
               </button>
