@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { CATEGORIAS_EDITABLES } from '../services/calculoPresupuesto.service.js';
 
-// Campos desconocidos (p. ej. subtotal, codigo) se descartan: el servidor recalcula los subtotales
 const detallePresupuestoSchema = z.object({
     categoria: z.enum(CATEGORIAS_EDITABLES),
     descripcion: z.string().min(1).max(500),
@@ -46,5 +45,5 @@ export const vistaPreviaCantidadPersonasSchema = z.object({
 }).strict();
 
 export const rechazarPresupuestoSchema = z.object({
-    observacion: z.string().trim().min(1, 'Debe indicar el motivo del rechazo.').max(1000)
+    observacion: z.string().trim().min(100, 'El motivo debe tener al menos 100 caracteres.').max(1000)
 }).strict();
