@@ -83,6 +83,9 @@ model Usuario {
   eventosPagoAbono          Evento[]      @relation("UsuarioPagoAbono")
   eventosPagoFinal          Evento[]      @relation("UsuarioPagoFinal")
   presupuestosDictaminados  Presupuesto[]
+  presupuestosCreados       Presupuesto[] @relation("UsuarioCreadorPresupuesto")
+  comprobantesSubidos       ComprobanteAbono[] @relation("UsuarioSubeComprobante")
+  comprobantesRevisados     ComprobanteAbono[] @relation("UsuarioRevisaComprobante")
 
   @@map("usuario")
 }
@@ -94,7 +97,6 @@ model TipoEvento {
   tarifaHoraBaseReferencial Int         @map("tarifa_hora_base_referencial")
   activo                    Boolean     @default(true) @map("activo")
 
-  // Relaciones
   plantillas                Plantilla[]
   eventos                   Evento[]
 
@@ -110,7 +112,6 @@ model CentroEvento {
   telefonoDueno     String?  @map("telefono_dueno") @db.VarChar(20)
   activo            Boolean  @default(true) @map("activo")
 
-  // Relaciones
   eventos           Evento[]
 
   @@map("centro_evento")
@@ -123,7 +124,6 @@ model Banqueteria {
   precioPersonaReferencial Int                        @map("precio_persona_referencial")
   activo                   Boolean                    @default(true) @map("activo")
 
-  // Relaciones
   eventosBanqueteria       EventoTieneBanqueteria[]
 
   @@map("banqueteria")
@@ -133,7 +133,6 @@ model Categoria {
   codigo  Int      @id @default(autoincrement()) @map("codigo")
   nombre  String   @unique @db.VarChar(200)
 
-  // Relaciones
   equipos Equipo[]
 
   @@map("categoria")
@@ -144,17 +143,14 @@ model Equipo {
   nombre                  String                @unique @db.VarChar(200)
   esExterno               Boolean               @default(false) @map("es_externo")
 
-  // SI NO ES EXTERNO, SI ES EXTERNO ESTO ES NULO
   stockTotal              Int?                  @map("stock_total")
   stockNoDisponible       Int?                  @default(0) @map("stock_no_disponible")
-  // SI ES EXTERNO, SI NO ES EXTERNO ESTO ES NULO
   proveedor               String?               @db.VarChar(100)
   telefonoProveedor       String?               @map("telefono_proveedor") @db.VarChar(20)
   arriendoHoraReferencial Int?                  @map("arriendo_hora_referencial")
 
   codigoCategoria         Int                   @map("codigo_categoria")
 
-  // Relaciones
   categoria               Categoria             @relation(fields: [codigoCategoria], references: [codigo])
   plantillas              Plantilla[]
   eventosEquipo           EventoUtilizaEquipo[]
@@ -167,13 +163,9 @@ model Especialidad {
   codigo            Int                           @id @default(autoincrement()) @map("codigo")
   nombre            String                        @unique @db.VarChar(200)
   tarifaHoraReferencial Int                       @default(0) @map("tarifa_hora_referencial")
-  // SI ES TRUE, EL PERSONAL ES INTERNO (SUELDO FIJO) Y SU COSTO YA ESTA CUBIERTO POR LA TARIFA BASE DEL EVENTO,
-  // POR LO QUE NO SE COBRA POR HORA EN EL PRESUPUESTO
   esPersonalFijo    Boolean                       @default(false) @map("es_personal_fijo")
-  // DETERMINA SI LA ESPECIALIDAD VA A SALIR EN LA EVALUACION DE TRABAJADORES
   esEvaluable       Boolean                       @default(true) @map("es_evaluable")
 
-  // Relaciones
   trabajadores      TrabajadorTieneEspecialidad[]
   plantillas        Plantilla[]
   participaciones   TrabajadorParticipaEvento[]
@@ -186,7 +178,6 @@ model TrabajadorTieneEspecialidad {
   rutTrabajador      String       @map("rut_trabajador") @db.VarChar(12)
   codigoEspecialidad Int          @map("codigo_especialidad")
 
-  // Relaciones
   trabajador         Trabajador   @relation(fields: [rutTrabajador], references: [rut])
   especialidad       Especialidad @relation(fields: [codigoEspecialidad], references: [codigo])
 
@@ -196,26 +187,6 @@ model TrabajadorTieneEspecialidad {
 
 model Plantilla {
   codigo             Int           @id @default(autoincrement()) @map("codigo")
-  // PERMITE CALCULAR LA CANTIDAD NECESARIA DE EQUIPO O ESPECIALIDADES SEGÚN LA CANTIDAD DE INVITADOS
-  // PARA CADA EVENTO, EJEMPLO:
-  // Si se requiere guardar que para un evento se necesitan parlantes y se sabe que para 1 matrimonio
-  // se necesitan 5 parlantes, entonces queda:
-  // cantidadFija = 5
-  // ratioInvitados = 0
-  // Se coloca que la cantidad fija es 5 y el ratio por invitados es 0, ya que independiente de la cantidad de invitados, siempre se necesitan 5 parlantes.
-  // En otro caso, si se requieren meseros la cosa cambia, para un matrimonio con 100 invitados y se necesita 1 mesero por cada 20 invitados:
-  // cantidadFija = 0
-  // ratioInvitados = 20
-  // Esto permite que la plantilla sea flexible y se pueda ajustar según la cantidad de invitados y los requerimientos específicos de cada evento.
-  // Se pueden combinar cantidadFija y ratioInvitados según las necesidades del evento. La lógica de cálculo debe considerar ambos valores para determinar la cantidad final requerida.
-  // Ejemplo de combinación:
-  // cantidadFija = 2
-  // ratioInvitados = 10
-  // Esto significa que siempre se necesitan 2 unidades del recurso, más 1 unidad adicional por cada 10 invitados.
-  // La idea del calculo es que sea : cantidadFija + (cantidadInvitados / ratioInvitados)
-  // Por ejemplo, si cantidadFija = 2, ratioInvitados = 10 y hay 50 invitados:
-  // cantidad final requerida = 2 + (50 / 10) = 7 unidades del recurso.
-  // Si el número da decimal por la división, se puede redondear hacia arriba para asegurar que haya suficientes unidades del recurso.
   cantidadFija       Int?          @map("cantidad_fija")
   ratioInvitados     Int?          @map("ratio_invitados")
 
@@ -223,7 +194,6 @@ model Plantilla {
   codigoEquipo       Int?          @map("codigo_equipo")
   codigoEspecialidad Int?          @map("codigo_especialidad")
 
-  // Relaciones
   tipoEvento         TipoEvento    @relation(fields: [codigoTipoEvento], references: [codigo])
   equipo             Equipo?       @relation(fields: [codigoEquipo], references: [codigo])
   especialidad       Especialidad? @relation(fields: [codigoEspecialidad], references: [codigo])
@@ -233,6 +203,7 @@ model Plantilla {
 
 model Evento {
   codigo                   Int                          @id @default(autoincrement()) @map("codigo")
+  numeroVisible            Int?                         @unique @default(autoincrement()) @map("numero_visible")
   codigoEvaluacion         String                       @unique @map("codigo_evaluacion") @db.VarChar(20)
   estado                   String                       @default("SOLICITADO") @db.VarChar(50) 
   fechaEvento              DateTime                     @map("fecha_evento") @db.Date
@@ -260,7 +231,6 @@ model Evento {
   codigoCentroEvento       Int?                         @map("codigo_centro_evento")
   rutCliente               String                       @map("rut_cliente") @db.VarChar(12)
 
-  // Relaciones
   tipoEvento               TipoEvento?                  @relation(fields: [codigoTipoEvento], references: [codigo])
   centroEvento             CentroEvento?                @relation(fields: [codigoCentroEvento], references: [codigo])
   cliente                  Cliente                      @relation(fields: [rutCliente], references: [rut])
@@ -271,6 +241,7 @@ model Evento {
   banqueterias             EventoTieneBanqueteria[]
   participaciones          TrabajadorParticipaEvento[]
   presupuesto              Presupuesto?
+  comprobanteAbono         ComprobanteAbono?
   evaluacionEvento         EvaluacionEvento?
   evaluacionesTrabajadores EvaluacionTrabajador[]
 
@@ -320,22 +291,40 @@ model TrabajadorParticipaEvento {
 
 model Presupuesto {
   codigo                           Int                  @id @default(autoincrement()) @map("codigo")
-  // BORRADOR | PENDIENTE_VALIDACION | VALIDADO | RECHAZADO
   estado                           String               @default("BORRADOR") @db.VarChar(100)
   fechaDictamen                    DateTime?            @map("fecha_dictamen") @db.Timestamptz(3)
   observacionDictamen              String?              @map("observacion_dictamen") @db.Text
   tarifaHoraBase                   Int                  @map("tarifa_hora_base")
-  // INCLUYE EL MARGEN FIJO (20%) SOBRE LAS LINEAS DE EQUIPAMIENTO ARRENDADO A TERCEROS (esArriendoTercero).
-  // SI SE EDITA DESPUES DEL PRIMER ABONO, EL SALDO PENDIENTE ES total - evento.montoAbono
   total                            Int
   rutUsuarioDictamen               String?              @map("rut_usuario_dictamen") @db.VarChar(12)
+  rutUsuarioCreador                String?              @map("rut_usuario_creador") @db.VarChar(12)
   codigoEvento                     Int                  @unique @map("codigo_evento")
 
   usuarioDictamen                  Usuario?             @relation(fields: [rutUsuarioDictamen], references: [rut])
+  usuarioCreador                   Usuario?             @relation("UsuarioCreadorPresupuesto", fields: [rutUsuarioCreador], references: [rut])
   evento                           Evento               @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
   detalles                         DetallePresupuesto[]
 
   @@map("presupuesto")
+}
+
+model ComprobanteAbono {
+  codigo           Int       @id @default(autoincrement())
+  codigoEvento     Int       @unique @map("codigo_evento")
+  contenido        Bytes
+  tipo             String    @db.VarChar(50)
+  estado           String    @db.VarChar(20)
+  observacion      String?   @db.Text
+  fechaCarga       DateTime  @default(now()) @map("fecha_carga") @db.Timestamptz(3)
+  fechaRevision    DateTime? @map("fecha_revision") @db.Timestamptz(3)
+  rutUsuarioCarga  String    @map("rut_usuario_carga") @db.VarChar(12)
+  rutUsuarioRevision String? @map("rut_usuario_revision") @db.VarChar(12)
+
+  evento           Evento    @relation(fields: [codigoEvento], references: [codigo], onDelete: Cascade)
+  usuarioCarga     Usuario   @relation("UsuarioSubeComprobante", fields: [rutUsuarioCarga], references: [rut])
+  usuarioRevision  Usuario?  @relation("UsuarioRevisaComprobante", fields: [rutUsuarioRevision], references: [rut])
+
+  @@map("comprobante_abono")
 }
 
 model DetallePresupuesto {
@@ -345,9 +334,7 @@ model DetallePresupuesto {
   cantidad          Int
   precioUnitario    Int         @map("precio_unitario") 
   subtotal          Int   
-  // SOLO PARA CATEGORIA EQUIPAMIENTO: EL COSTO (subtotal) ES DE UN ARRIENDO A TERCERO Y LLEVA MARGEN
-  esArriendoTercero Boolean     @default(false) @map("es_arriendo_tercero")  // REFERENCIAS OPCIONALES PARA LAS LINEAS DE PERSONAL. SI rutTrabajador TIENE VALOR, LA LINEA LA ADMINISTRA EL SISTEMA
-  // AL ASIGNAR/QUITAR TRABAJADORES EXTERNOS DEL EVENTO
+  esArriendoTercero Boolean     @default(false) @map("es_arriendo_tercero")
   codigoEspecialidad Int?       @map("codigo_especialidad")
   rutTrabajador     String?     @map("rut_trabajador") @db.VarChar(12)
   codigoEquipo      Int?        @map("codigo_equipo")
