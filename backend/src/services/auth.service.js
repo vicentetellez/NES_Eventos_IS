@@ -4,16 +4,20 @@ import prisma from '../config/prisma.js';
 import { JWT_SECRET } from "../config/configEnv.js";
 import { AppError } from "../helpers/responses.js";
 
+const userProfileSelect = {
+    rut: true,
+    rol: true,
+    activo: true,
+    debeCambiarPassword: true,
+    ultimoAcceso: true,
+    fechaRegistro: true,
+    persona: true
+};
+
 export async function me(rut) {
     const user = await prisma.usuario.findUnique({
         where: { rut },
-        select: { 
-            rol: true, 
-            debeCambiarPassword: true,
-            ultimoAcceso: true,
-            fechaRegistro: true,
-            persona: true
-        }
+        select: userProfileSelect
     });
     return user;
 }
@@ -42,9 +46,10 @@ export async function loginService(data){
         throw new AppError("Usuario inactivo.", 403);
     }
 
-    await prisma.usuario.update({
+    const userDTO = await prisma.usuario.update({
         where: { rut: user.rut },
-        data: { ultimoAcceso: new Date() }
+        data: { ultimoAcceso: new Date() },
+        select: userProfileSelect
     });
 
     const token = jwt.sign(
@@ -55,13 +60,6 @@ export async function loginService(data){
         JWT_SECRET,
         { expiresIn: "1h" }
     );
-
-    const userDTO = {
-        rut: user.rut,
-        rol: user.rol,
-        activo: user.activo,
-        debeCambiarPassword: user.debeCambiarPassword
-    };
 
     return ({ user: userDTO, token });
 }

@@ -6,6 +6,32 @@ import { crearAsignacionesBanqueteria } from './banqueteria.service.js';
 import { calcularPrimerAbono } from './calculoPresupuesto.service.js';
 import { inicializarEquiposPresupuestados } from './equipoEvento.service.js';
 
+// Estadísticas públicas para la landing page (sin datos sensibles)
+export async function getEstadisticasPublicas() {
+    const [eventosRealizados, totalEvaluaciones, recomendaciones, centrosEvento, tiposEvento, banqueterias] = await Promise.all([
+        prisma.evento.count({ where: { estado: 'FINALIZADO' } }),
+        prisma.evaluacionEvento.count(),
+        prisma.evaluacionEvento.count({ where: { recomendacion: true } }),
+        prisma.centroEvento.count({ where: { activo: true } }),
+        prisma.tipoEvento.count({ where: { activo: true } }),
+        prisma.banqueteria.count({ where: { activo: true } })
+    ]);
+
+    const satisfaccionPromedio = totalEvaluaciones > 0
+        ? Math.round((recomendaciones / totalEvaluaciones) * 100)
+        : null;
+
+    return {
+        eventosRealizados,
+        totalEvaluaciones,
+        satisfaccionPromedio,
+        centrosEvento,
+        tiposEvento,
+        banqueterias
+    };
+}
+
+// Lo que devuelva va a poder variar un un futuro, va a depender de lo que mostremos en el front xd
 export async function getAllEventosByFilterEstado(estado) {
     const eventos = await prisma.evento.findMany({
         select: {
@@ -43,10 +69,20 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
 
     const eventos = await prisma.evento.findMany({
         where: {
-            estado: 'PENDIENTE_PAGO_ABONO',
-            fechaPagoAbono: null,
-            fechaLimiteAbono: { not: null, lte: fechaMaxima },
-            montoAbono: { not: null }
+            OR: [
+                {
+                    estado: 'PENDIENTE_PAGO_ABONO',
+                    fechaPagoAbono: null,
+                    fechaLimiteAbono: { not: null, lte: fechaMaxima },
+                    montoAbono: { not: null }
+                },
+                {
+                    estado: 'PENDIENTE_PAGO_FINAL',
+                    fechaPagoAbono: { not: null },
+                    fechaPagoFinal: null,
+                    montoAbono: { not: null }
+                }
+            ]
         },
         orderBy: { fechaLimiteAbono: 'asc' },
         select: {
@@ -56,6 +92,7 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
             montoAbono: true,
             tipoEvento: { select: { nombre: true } },
             tipoEventoCliente: true,
+            presupuesto: { select: { total: true } },
             cliente: {
                 select: {
                     persona: {
@@ -71,8 +108,13 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
     });
 
     const alertas = eventos.map((evento) => {
-        const fechaLimite = new Date(evento.fechaLimiteAbono);
-        const diasRestantes = Math.round((fechaLimite - hoy) / 86400000);
+        const esPagoFinal = evento.estado === 'PENDIENTE_PAGO_FINAL';
+        const fechaLimite = evento.fechaLimiteAbono
+            ? new Date(evento.fechaLimiteAbono)
+            : null;
+        const diasRestantes = fechaLimite
+            ? Math.round((fechaLimite - hoy) / 86400000)
+            : null;
         const persona = evento.cliente.persona;
 
         return {
@@ -82,10 +124,15 @@ export async function getAlertasPagoPendiente(diasAnticipacion = 3) {
             nombreCliente: [persona.nombre, persona.primerApellido, persona.segundoApellido]
                 .filter(Boolean)
                 .join(' '),
-            montoPendiente: evento.montoAbono,
-            fechaLimiteAbono: evento.fechaLimiteAbono,
+            tipoPago: esPagoFinal ? 'PAGO_FINAL' : 'ABONO',
+            montoPendiente: esPagoFinal
+                ? evento.presupuesto ? evento.presupuesto.total - evento.montoAbono : null
+                : evento.montoAbono,
+            fechaLimiteAbono: fechaLimite,
             diasRestantes,
-            estadoAlerta: diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
+            estadoAlerta: esPagoFinal
+                ? 'PENDIENTE'
+                : diasRestantes < 0 ? 'VENCIDO' : 'POR_VENCER'
         };
     });
 

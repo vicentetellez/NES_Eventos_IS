@@ -43,8 +43,10 @@ export function AuthProvider({ children }) {
 
   const login = async (rut, password) => {
     try {
-      await loginService({ rut, password });
-      const userData = await getCurrentUser();
+      const { user: userData } = await loginService({ rut, password });
+      if (!userData?.rut || !userData.rol || !userData.persona) {
+        throw new Error('La respuesta de inicio de sesión no contiene los datos del usuario.');
+      }
       setUser(userData);
       setAuthError(null);
 
@@ -52,6 +54,10 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return { success: false, message: error.message || 'Credenciales inválidas' };
     }
+  };
+
+  const markPasswordChanged = () => {
+    setUser((currentUser) => currentUser ? { ...currentUser, debeCambiarPassword: false } : currentUser);
   };
 
   const logout = async () => {
@@ -80,6 +86,7 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!user,
         login,
         logout,
+        markPasswordChanged,
       }}
     >
       {!loading && children}

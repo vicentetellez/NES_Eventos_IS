@@ -414,6 +414,12 @@ async function seedComunas(){
     }
 }
 
+const personasTrabajadoresEvento = [
+    { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
+    { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
+    { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 }
+];
+
 async function seedPersonas(){
     try {
         const  countPersona = await prisma.persona.count();
@@ -422,16 +428,14 @@ async function seedPersonas(){
                 { rut: '11111111-1', nombre: 'ADMIN', primerApellido: 'ADMIN', segundoApellido: 'ADMIN', fechaNacimiento: new Date('2000-01-01'), telefono: '000000000', email: 'default.user@example.com', codigoComuna: 295 },
                 { rut: '12345678-5', nombre: 'Juan', primerApellido: 'Pérez', segundoApellido: 'Gómez', fechaNacimiento: new Date('1990-01-01'), telefono: '123456789', email: 'juan.perez@example.com', codigoComuna: 181 },
                 { rut: '98765432-5', nombre: 'María', primerApellido: 'López', segundoApellido: 'Martínez', fechaNacimiento: new Date('1992-02-02'), telefono: '987654321', email: 'maria.lopez@example.com', codigoComuna: 181 },
-                { rut: '11223344-K', nombre: 'Pedro', primerApellido: 'García', segundoApellido: 'Fernández', fechaNacimiento: new Date('1985-03-03'), telefono: '112233445', email: 'pedro.garcia@example.com', codigoComuna: 181 },
+                ...personasTrabajadoresEvento,
                 { rut: '55667788-3', nombre: 'Ana', primerApellido: 'Torres', segundoApellido: 'Vega', fechaNacimiento: new Date('1995-04-04'), telefono: '556677889', email: 'ana.torres@example.com', codigoComuna: 181 },
-                { rut: '66778899-4', nombre: 'Luis', primerApellido: 'Ramírez', segundoApellido: 'Soto', fechaNacimiento: new Date('1988-05-05'), telefono: '667788990', email: 'luis.ramirez@example.com', codigoComuna: 181 },
-                { rut: '77889900-0', nombre: 'Carla', primerApellido: 'Muñoz', segundoApellido: 'Rojas', fechaNacimiento: new Date('1993-06-06'), telefono: '778899001', email: 'carla.munoz@example.com', codigoComuna: 181 },   
                 { rut: '15167826-2', nombre: 'Jorge', primerApellido: 'Hernández', segundoApellido: 'Cruz', fechaNacimiento: new Date('1991-07-07'), telefono: '889900112', email: 'jorge.hernandez@example.com', codigoComuna: 181 },
                 { rut: '13166479-6', nombre: 'Lucía', primerApellido: 'Vargas', segundoApellido: 'Molina', fechaNacimiento: new Date('1994-08-08'), telefono: '990011223', email: 'lucia.vargas@example.com', codigoComuna: 181 },
                 { rut: '16376527-6', nombre: 'Miguel', primerApellido: 'Castro', segundoApellido: 'Pérez', fechaNacimiento: new Date('1990-09-09'), telefono: '101112131', email: 'miguel.castro@example.com', codigoComuna: 181 },
                 { rut: '20126066-3', nombre: 'Sofía', primerApellido: 'Rivas', segundoApellido: 'Lara', fechaNacimiento: new Date('1992-10-10'), telefono: '121314151', email: 'sofia.rivas@example.com', codigoComuna: 181 },
                 { rut: '13073408-1', nombre: 'Valentina', primerApellido: 'Silva', segundoApellido: 'Morales', fechaNacimiento: new Date('1993-11-11'), telefono: '131415161', email: 'valentina.silva@example.com', codigoComuna: 181 },
-
+                { rut: '29999999-8', nombre: 'Danilo', primerApellido: 'Fuentes', segundoApellido: 'Hidalgo', fechaNacimiento: new Date('1980-01-01'), telefono: '911111111', email: 'gerente@example.com', codigoComuna: 181 }
             ];  
             await prisma.persona.createMany({ data: personas });
             console.log('Personas sembradas correctamente.');
@@ -495,7 +499,8 @@ async function seedUsuarios(){
             const usuarios = [
                 { rut: '11111111-1', password: 'admin123', rol: 'ADMIN', ultimoAcceso: new Date(), debeCambiarPassword: false },
                 { rut: '66778899-4', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: false },
-                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: true }
+                { rut: '77889900-0', password: 'password123', rol: 'STAFF', ultimoAcceso: new Date(), debeCambiarPassword: true },
+                { rut: '29999999-8', password: 'password123', rol: 'GERENTE', ultimoAcceso: new Date(), debeCambiarPassword: false }
             ];
             for (const usuario of usuarios) {
                 const passwordHash = await argon2.hash(usuario.password, {
@@ -845,7 +850,12 @@ async function seedCatalogosPresupuesto(){
     const especialidades = [
         { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000 },
         { nombre: 'Garzon', tarifaHoraReferencial: 8000 },
-        { nombre: 'Productor general', tarifaHoraReferencial: 22000 }
+        { nombre: 'Productor general', tarifaHoraReferencial: 22000 },
+        { nombre: 'Iluminador', tarifaHoraReferencial: 0 },
+        { nombre: 'Conductor', tarifaHoraReferencial: 0 },
+        { nombre: 'Auxiliar', tarifaHoraReferencial: 0 },
+        { nombre: 'Electrico', tarifaHoraReferencial: 0 },
+        { nombre: 'Personal de apoyo', tarifaHoraReferencial: 0 }
     ];
 
     const especialidadesCreadas = {};
@@ -897,228 +907,97 @@ async function seedCatalogosPresupuesto(){
     console.log('Inventario de equipos y plantillas sembrado correctamente.');
 }
 
-function calcularDigitoVerificador(cuerpo) {
-    let suma = 0;
-    let factor = 2;
-    for (const digito of String(cuerpo).split('').reverse()) {
-        suma += Number(digito) * factor;
-        factor = factor === 7 ? 2 : factor + 1;
-    }
-    const resto = 11 - (suma % 11);
-    if (resto === 11) return '0';
-    if (resto === 10) return 'K';
-    return String(resto);
-}
+const trabajadoresEvento = [
+    { rut: '11223344-K', especialidades: ['Tecnico de sonido', 'Electrico'] },
+    { rut: '66778899-4', especialidades: ['Iluminador', 'Conductor'] },
+    { rut: '77889900-0', especialidades: ['Garzon', 'Personal de apoyo'] }
+];
 
-function crearRutDemo(cuerpo) {
-    return `${cuerpo}-${calcularDigitoVerificador(cuerpo)}`;
-}
+async function seedEspecialidadesTrabajadoresEvento() {
+    for (const { rut, especialidades } of trabajadoresEvento) {
+        const persona = personasTrabajadoresEvento.find(persona => persona.rut === rut);
+        if (!persona) throw new Error(`No hay datos de persona para el trabajador ${rut}`);
 
-async function hashPasswordSeed(password) {
-    return argon2.hash(password, {
-        type: ARGON2_TYPE,
-        memoryCost: parseInt(ARGON2_MEMORY_COST),
-        timeCost: parseInt(ARGON2_TIME_COST),
-        parallelism: parseInt(ARGON2_PARALLELISM),
-    });
-}
-
-async function seedGerente(){
-    try {
-        const rut = crearRutDemo(29999999);
-        await prisma.persona.upsert({
+        await prisma.persona.upsert({ where: { rut }, update: {}, create: persona });
+        const trabajador = await prisma.trabajador.upsert({
             where: { rut },
             update: {},
-            create: {
-                rut,
-                nombre: 'Gerente',
-                primerApellido: 'General',
-                segundoApellido: 'NES',
-                fechaNacimiento: new Date('1980-01-01'),
-                telefono: '911111111',
-                email: 'gerente@example.com',
-                codigoComuna: 181
-            }
+            create: { rut, esExterno: false, sueldo: 900000 }
         });
+        if (!trabajador.activo || trabajador.esExterno) {
+            throw new Error(`El trabajador de prueba ${rut} debe estar activo y ser interno`);
+        }
 
-        const usuarioExistente = await prisma.usuario.findUnique({ where: { rut } });
-        if (!usuarioExistente) {
-            await prisma.usuario.create({
-                data: {
-                    rut,
-                    password: await hashPasswordSeed('password123'),
-                    rol: 'GERENTE',
-                    ultimoAcceso: new Date(),
-                    debeCambiarPassword: false
-                }
+        for (const nombre of especialidades) {
+            const especialidad = await prisma.especialidad.findUnique({ where: { nombre } });
+            if (!especialidad) throw new Error(`No se encontró la especialidad "${nombre}"`);
+
+            await prisma.trabajadorTieneEspecialidad.upsert({
+                where: { rutTrabajador_codigoEspecialidad: { rutTrabajador: rut, codigoEspecialidad: especialidad.codigo } },
+                update: {},
+                create: { rutTrabajador: rut, codigoEspecialidad: especialidad.codigo }
             });
         }
-        console.log(`Usuario GERENTE listo (rut ${rut}).`);
-    } catch (error) {
-        console.error('Error al sembrar el usuario GERENTE:', error);
-    }
-}
-
-async function seedPersonalTrabajadores(){
-    const nombres = ['Camilo', 'Francisca', 'Matías', 'Javiera', 'Sebastián', 'Constanza', 'Nicolás', 'Daniela', 'Felipe', 'Catalina',
-        'Cristóbal', 'Fernanda', 'Rodrigo', 'Paula', 'Diego', 'Macarena', 'Andrés', 'Bárbara', 'Tomás', 'Camila'];
-    const apellidos = ['González', 'Muñoz', 'Rojas', 'Díaz', 'Pérez', 'Soto', 'Contreras', 'Silva', 'Martínez', 'Sepúlveda',
-        'Morales', 'Rodríguez', 'López', 'Fuentes', 'Hernández', 'Torres', 'Araya', 'Flores', 'Espinoza', 'Valenzuela'];
-
-    const especialidadesPersonal = [
-        { nombre: 'Jefe de Operaciones y Logistica', tarifaHoraReferencial: 25000, esPersonalFijo: true, internos: 1, sueldo: 1100000, externos: 0 },
-        { nombre: 'Ejecutivo de Produccion y Comercial', tarifaHoraReferencial: 18000, esPersonalFijo: true, internos: 2, sueldo: 900000, externos: 0 },
-        { nombre: 'Tecnico de sonido', tarifaHoraReferencial: 15000, esPersonalFijo: true, internos: 1, sueldo: 850000, externos: 1 },
-        { nombre: 'Iluminador', tarifaHoraReferencial: 12000, esPersonalFijo: true, internos: 1, sueldo: 800000, externos: 0 },
-        { nombre: 'Electrico', tarifaHoraReferencial: 12000, esPersonalFijo: true, internos: 1, sueldo: 750000, externos: 0 },
-        { nombre: 'Encargado de bodega', tarifaHoraReferencial: 9000, esPersonalFijo: true, internos: 1, sueldo: 700000, externos: 0 },
-        { nombre: 'Conductor/Auxiliar', tarifaHoraReferencial: 10000, esPersonalFijo: true, internos: 2, sueldo: 650000, externos: 0 },
-        { nombre: 'Garzon', tarifaHoraReferencial: 8000, esPersonalFijo: false, internos: 3, sueldo: 520000, externos: 4 },
-        { nombre: 'DJ', tarifaHoraReferencial: 20000, esPersonalFijo: false, internos: 2, sueldo: 600000, externos: 1 },
-        { nombre: 'Animador / Maestro de ceremonia', tarifaHoraReferencial: 25000, esPersonalFijo: false, internos: 0, sueldo: null, externos: 2 },
-        { nombre: 'Fotografo / Videografo', tarifaHoraReferencial: 20000, esPersonalFijo: false, internos: 0, sueldo: null, externos: 2 },
-        { nombre: 'Guardia de seguridad', tarifaHoraReferencial: 6000, esPersonalFijo: false, internos: 2, sueldo: 560000, externos: 3 },
-        { nombre: 'Personal de apoyo', tarifaHoraReferencial: 5000, esPersonalFijo: false, internos: 2, sueldo: 500000, externos: 4 }
-    ];
-
-    let indice = 0;
-    let trabajadoresProcesados = 0;
-
-    const asegurarTrabajador = async (codigoEspecialidad, esExterno, sueldo, cohorte = 0) => {
-        indice += 1;
-        const indiceTrabajador = indice + cohorte * 1000;
-        const rut = crearRutDemo(30000000 + indiceTrabajador);
-        await prisma.persona.upsert({
-            where: { rut },
-            update: {},
-            create: {
-                rut,
-                nombre: nombres[indiceTrabajador % nombres.length],
-                primerApellido: apellidos[(indiceTrabajador * 7) % apellidos.length],
-                segundoApellido: apellidos[(indiceTrabajador * 3 + 5) % apellidos.length],
-                fechaNacimiento: new Date(`${1980 + (indiceTrabajador % 20)}-0${1 + (indiceTrabajador % 9)}-15`),
-                telefono: String(970000000 + indiceTrabajador),
-                email: `trabajador${indiceTrabajador}@neseventos.example`,
-                codigoComuna: 181
-            }
-        });
-        await prisma.trabajador.upsert({
-            where: { rut },
-            update: {},
-            create: {
-                rut,
-                esExterno,
-                sueldo: esExterno ? null : sueldo,
-                aniosExperiencia: 1 + (indiceTrabajador % 12)
-            }
-        });
-        await prisma.trabajadorTieneEspecialidad.upsert({
-            where: { rutTrabajador_codigoEspecialidad: { rutTrabajador: rut, codigoEspecialidad } },
-            update: {},
-            create: { rutTrabajador: rut, codigoEspecialidad }
-        });
-        trabajadoresProcesados += 1;
-    };
-
-    try {
-        for (const item of especialidadesPersonal) {
-            const especialidad = await prisma.especialidad.upsert({
-                where: { nombre: item.nombre },
-                update: {
-                    tarifaHoraReferencial: item.tarifaHoraReferencial,
-                    esPersonalFijo: item.esPersonalFijo
-                },
-                create: {
-                    nombre: item.nombre,
-                    tarifaHoraReferencial: item.tarifaHoraReferencial,
-                    esPersonalFijo: item.esPersonalFijo
-                }
-            });
-
-            for (let i = 0; i < item.internos; i++) {
-                await asegurarTrabajador(especialidad.codigo, false, item.sueldo);
-            }
-            for (let i = 0; i < item.externos; i++) {
-                await asegurarTrabajador(especialidad.codigo, true, null);
-            }
-        }
-
-        for (const item of especialidadesPersonal) {
-            const especialidad = await prisma.especialidad.findUnique({ where: { nombre: item.nombre } });
-            for (let i = 0; i < item.internos; i++) {
-                await asegurarTrabajador(especialidad.codigo, false, item.sueldo, 1);
-            }
-            for (let i = 0; i < item.externos; i++) {
-                await asegurarTrabajador(especialidad.codigo, true, null, 1);
-            }
-        }
-        console.log(`Personal interno y externo de prueba sembrado (${trabajadoresProcesados} trabajadores demostrativos).`);
-    } catch (error) {
-        console.error('Error al sembrar el personal de prueba:', error);
     }
 }
 
 async function seedParticipacionesEventos() {
     const asignaciones = [
         { codigoEvaluacion: 'EV-9S0T1U', estado: 'FINALIZADO', especialidades: ['Iluminador', 'Garzon'] },
-        { codigoEvaluacion: 'EV-3M4N5O', estado: 'PENDIENTE_PAGO_FINAL', especialidades: ['Tecnico de sonido', 'Conductor/Auxiliar'] },
+        { codigoEvaluacion: 'EV-3M4N5O', estado: 'PENDIENTE_PAGO_FINAL', especialidades: ['Tecnico de sonido', 'Conductor'] },
         { codigoEvaluacion: 'EV-6P7Q8R', estado: 'EN_PREPARACION', especialidades: ['Electrico', 'Personal de apoyo'] }
     ];
 
-    try {
-        for (const asignacion of asignaciones) {
-            const evento = await prisma.evento.findUnique({
-                where: { codigoEvaluacion: asignacion.codigoEvaluacion }
+    for (const asignacion of asignaciones) {
+        const evento = await prisma.evento.findUnique({
+            where: { codigoEvaluacion: asignacion.codigoEvaluacion }
+        });
+        if (!evento || evento.estado !== asignacion.estado) continue;
+
+        const minutosTrabajador = (
+            evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)
+        ) * 60;
+
+        for (const nombreEspecialidad of asignacion.especialidades) {
+            const especialidad = await prisma.especialidad.findUnique({
+                where: { nombre: nombreEspecialidad }
             });
-            if (!evento || evento.estado !== asignacion.estado) continue;
-
-            const minutosTrabajador = (
-                evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)
-            ) * 60;
-
-            for (const nombreEspecialidad of asignacion.especialidades) {
-                const especialidad = await prisma.especialidad.findUnique({
-                    where: { nombre: nombreEspecialidad }
-                });
-                if (!especialidad) {
-                    throw new Error(`No se encontró la especialidad "${nombreEspecialidad}"`);
-                }
-
-                const trabajador = await prisma.trabajadorTieneEspecialidad.findFirst({
-                    where: {
-                        codigoEspecialidad: especialidad.codigo,
-                        trabajador: { is: { activo: true, esExterno: false } }
-                    },
-                    orderBy: { rutTrabajador: 'asc' },
-                    select: { rutTrabajador: true }
-                });
-                if (!trabajador) {
-                    throw new Error(`No hay un trabajador interno activo para "${nombreEspecialidad}"`);
-                }
-
-                await prisma.trabajadorParticipaEvento.upsert({
-                    where: {
-                        rutTrabajador_codigoEspecialidad_codigoEvento: {
-                            rutTrabajador: trabajador.rutTrabajador,
-                            codigoEspecialidad: especialidad.codigo,
-                            codigoEvento: evento.codigo
-                        }
-                    },
-                    update: { minutosTrabajador, tarifaHoraAcordada: 0 },
-                    create: {
-                        rutTrabajador: trabajador.rutTrabajador,
-                        codigoEspecialidad: especialidad.codigo,
-                        codigoEvento: evento.codigo,
-                        minutosTrabajador,
-                        tarifaHoraAcordada: 0
-                    }
-                });
+            if (!especialidad) {
+                throw new Error(`No se encontró la especialidad "${nombreEspecialidad}"`);
             }
+
+            const trabajador = trabajadoresEvento.find(trabajador => trabajador.especialidades.includes(nombreEspecialidad));
+            if (!trabajador) {
+                throw new Error(`No hay un trabajador de prueba para "${nombreEspecialidad}"`);
+            }
+
+            const participacionExistente = await prisma.trabajadorParticipaEvento.findFirst({
+                where: { rutTrabajador: trabajador.rut, codigoEvento: evento.codigo }
+            });
+            if (participacionExistente && participacionExistente.codigoEspecialidad !== especialidad.codigo) {
+                throw new Error(`El trabajador ${trabajador.rut} ya está asignado al evento ${evento.codigo} con otra especialidad`);
+            }
+
+            await prisma.trabajadorParticipaEvento.upsert({
+                where: {
+                    rutTrabajador_codigoEspecialidad_codigoEvento: {
+                        rutTrabajador: trabajador.rut,
+                        codigoEspecialidad: especialidad.codigo,
+                        codigoEvento: evento.codigo
+                    }
+                },
+                update: { minutosTrabajador, tarifaHoraAcordada: 0 },
+                create: {
+                    rutTrabajador: trabajador.rut,
+                    codigoEspecialidad: especialidad.codigo,
+                    codigoEvento: evento.codigo,
+                    minutosTrabajador,
+                    tarifaHoraAcordada: 0
+                }
+            });
         }
-        console.log('Participaciones de trabajadores de eventos de prueba sembradas correctamente.');
-    } catch (error) {
-        console.error('Error al sembrar participaciones de trabajadores:', error);
     }
+    console.log('Participaciones de trabajadores de eventos de prueba sembradas correctamente.');
 }
 
 
@@ -1139,8 +1018,7 @@ async function main(){
     await seedBanqueteria();
     await seedEventos();
     await seedCatalogosPresupuesto();
-    await seedGerente();
-    await seedPersonalTrabajadores();
+    await seedEspecialidadesTrabajadoresEvento();
     await seedParticipacionesEventos();
 }
 

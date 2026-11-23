@@ -4,11 +4,21 @@ import {
     getAlertasPagoPendiente,
     getEventoByCodigo,
     getEventoByCodigoEvaluacion,
+    getEstadisticasPublicas,
     solicitudEvento,
     updateEvento,
     deleteEvento,
     avanzarEstadoEvento
 } from '../services/evento.service.js';
+
+export const getEstadisticasPublicasController = async (req, res, next) => {
+    try {
+        const estadisticas = await getEstadisticasPublicas();
+        response.success(res, 200, 'Estadísticas públicas obtenidas correctamente', estadisticas);
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const getAlertasPagoPendienteController = async (req, res, next) => {
     try {

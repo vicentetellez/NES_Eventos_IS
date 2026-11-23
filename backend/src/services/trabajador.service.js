@@ -6,8 +6,7 @@ function calcularPromedio(evaluaciones) {
     return Number((total / evaluaciones.length).toFixed(2));
 }
 
-export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
-    const { incluirRut = true, modoDemostracion = false } = opciones;
+export async function getRankingTrabajadores(filtros = {}) {
     const { nombre, especialidad, aniosExperienciaMin, aniosExperienciaMax } = filtros;
     const where = {
         activo: true,
@@ -67,7 +66,6 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
             evaluaciones: {
                 select: {
                     calificacion: true,
-                    comentarioEspecifico: true,
                     codigoEspecialidad: true,
                     especialidad: { select: { codigo: true, nombre: true } }
                 }
@@ -90,7 +88,7 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
 
         const persona = trabajador.persona;
         return {
-            ...(incluirRut ? { rut: trabajador.rut } : {}),
+            rut: trabajador.rut,
             nombre: [persona.nombre, persona.primerApellido, persona.segundoApellido]
                 .filter(Boolean)
                 .join(' '),
@@ -99,15 +97,10 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
             activo: true,
             calificacionPromedio: calcularPromedio(trabajador.evaluaciones),
             totalEvaluaciones: trabajador.evaluaciones.length,
-            tieneEvaluacionDemo: trabajador.evaluaciones.some(({ comentarioEspecifico }) =>
-                comentarioEspecifico?.startsWith('[DEMO FICTICIA]')
-            ),
             especialidades: trabajador.especialidades.map(({ especialidad: item }) => ({
                 codigo: item.codigo,
                 nombre: item.nombre
             })),
-            tieneExperienciaDemo: trabajador.aniosExperiencia !== null
-                && trabajador.especialidades.some(({ especialidad: item }) => item.nombre.startsWith('DEMO -')),
             evaluacionesPorEspecialidad: [...evaluacionesPorEspecialidad.values()].map((grupo) => ({
                 codigoEspecialidad: grupo.codigoEspecialidad,
                 nombre: grupo.nombre,
@@ -125,7 +118,6 @@ export async function getRankingTrabajadores(filtros = {}, opciones = {}) {
 
     return {
         total: ranking.length,
-        ...(modoDemostracion ? { modoDemostracion: true } : {}),
         filtros: {
             nombre: nombre ?? null,
             especialidad: especialidad ?? null,

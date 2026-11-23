@@ -22,6 +22,8 @@ const getIconForTipo = (nombre = '') => {
 
 const DURATION_OPTIONS = ["2 horas", "3 horas", "4 horas", "5 horas", "6 horas", "7 horas", "8+ horas"];
 const MIN_EVENT_DATE = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
+const MAX_GUESTS = 100000;
+const isValidGuestCount = (value) => value !== '' && Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= MAX_GUESTS;
 
 // Comunas de la Región del Biobío (códigos según semilla de la base de datos)
 const COMUNAS_BIOBIO = [
@@ -91,7 +93,7 @@ export default function FormularioSolicitud() {
 
   const canNext = () => {
     if (step === 1) return !!form.eventType;
-    if (step === 2) return !!(form.date && form.timeStart && form.duration && form.guests);
+    if (step === 2) return !!(form.date && form.timeStart && form.duration && isValidGuestCount(form.guests));
     if (step === 3) return true;
     if (step === 4) {
       if (!form.rut || !form.terms) return false;
@@ -103,11 +105,15 @@ export default function FormularioSolicitud() {
 
   // ─── Mapeo de datos para Backend / Zod ──────────────────────────────────────
   const handleSubmit = async () => {
+    if (!isValidGuestCount(form.guests)) {
+      setSubmitError('La cantidad de invitados debe ser un número entero entre 1 y 500.000.');
+      return;
+    }
     try {
       setSubmitting(true);
       setSubmitError(null);
 
-      const cantidadPersonas = parseInt(form.guests, 10) || 1;
+      const cantidadPersonas = Number(form.guests);
       const horasEvento = parseInt(form.duration, 10) || 1;
 
       // 1. Objeto datosEventoNuevo
@@ -526,17 +532,26 @@ function Step2({ data, set, centrosEvento }) {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
+          <label htmlFor="guests" className="block text-xs font-medium text-[#f0ece4]/60 uppercase tracking-wider mb-2">
             N° de invitados *
           </label>
           <input
+            id="guests"
             type="number"
             className="w-full bg-white/5 border border-white/15 rounded px-3 py-2.5 text-sm text-[#f0ece4] placeholder-white/30 focus:outline-none focus:border-[#c9a84c] transition-colors"
             placeholder="Ej: 80"
             min={1}
+            max={MAX_GUESTS}
+            step={1}
+            aria-describedby="guests-help"
+            aria-invalid={data.guests !== '' && !isValidGuestCount(data.guests)}
             value={data.guests}
             onChange={(e) => handleGuestsChange(e.target.value)}
           />
+          <p id="guests-help" className="mt-1 text-xs text-[#f0ece4]/60">Entre 1 y 500.000 invitados.</p>
+          {data.guests !== '' && !isValidGuestCount(data.guests) && (
+            <p role="alert" className="mt-1 text-xs text-red-300">Ingresa un número entero entre 1 y 500.000.</p>
+          )}
         </div>
       </div>
 

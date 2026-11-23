@@ -1,9 +1,5 @@
-import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { changeOwnPassword } from '../services/auth.service.js';
-
-const campoContrasena =
-  'w-full rounded-lg border border-white/10 bg-[#0a0c10] px-4 py-3 text-sm text-[#f0ece4] outline-none transition placeholder:text-[#f0ece4]/30 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20 disabled:opacity-50';
+import PasswordChangeForm from '../components/PasswordChangeForm';
 
 const fechaCompleta = new Intl.DateTimeFormat('es-CL', {
   dateStyle: 'long',
@@ -18,12 +14,6 @@ function mostrarFecha(fecha) {
 
 function Perfil() {
   const { user } = useAuth();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
 
   const persona = user?.persona;
   const nombreCompleto = [
@@ -31,30 +21,6 @@ function Perfil() {
     persona?.primerApellido,
     persona?.segundoApellido
   ].filter(Boolean).join(' ');
-
-  const actualizarContrasena = async (event) => {
-    event.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('La nueva contraseña y su confirmación no coinciden.');
-      return;
-    }
-
-    setSavingPassword(true);
-    try {
-      await changeOwnPassword({ currentPassword, newPassword });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordSuccess('Tu contraseña se actualizó correctamente.');
-    } catch (error) {
-      setPasswordError(error.message);
-    } finally {
-      setSavingPassword(false);
-    }
-  };
 
   return (
     <main className="min-h-screen bg-[#0a0c10] px-4 py-8 text-[#f0ece4] sm:px-6 lg:px-10">
@@ -108,72 +74,7 @@ function Perfil() {
               La contraseña nueva debe tener entre 8 y 100 caracteres.
             </p>
           </div>
-
-          <form className="grid gap-5 sm:grid-cols-2" onSubmit={actualizarContrasena}>
-            <label className="grid content-start gap-2 text-xs font-medium text-[#f0ece4]/65 sm:col-span-2">
-              Contraseña actual
-              <input
-                type="password"
-                autoComplete="current-password"
-                minLength={8}
-                maxLength={100}
-                required
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                className={campoContrasena}
-                disabled={savingPassword}
-              />
-            </label>
-            <label className="grid content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
-              Nueva contraseña
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={100}
-                required
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                className={campoContrasena}
-                disabled={savingPassword}
-              />
-            </label>
-            <label className="grid content-start gap-2 text-xs font-medium text-[#f0ece4]/65">
-              Confirmar nueva contraseña
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                maxLength={100}
-                required
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className={campoContrasena}
-                disabled={savingPassword}
-              />
-            </label>
-
-            {passwordError && (
-              <p className="sm:col-span-2 rounded-lg border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200" role="alert">
-                {passwordError}
-              </p>
-            )}
-            {passwordSuccess && (
-              <p className="sm:col-span-2 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200" role="status">
-                {passwordSuccess}
-              </p>
-            )}
-
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={savingPassword}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#c9a84c] px-5 py-2.5 text-sm font-semibold text-[#0a0c10] transition hover:bg-[#d8b85d] focus:outline-none focus:ring-2 focus:ring-[#c9a84c] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {savingPassword ? 'Actualizando…' : 'Actualizar contraseña'}
-              </button>
-            </div>
-          </form>
+          <PasswordChangeForm />
         </section>
       </div>
     </main>

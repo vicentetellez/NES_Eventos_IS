@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import { AuthProvider, useAuth } from '../context/AuthContext'
+import PasswordChangeRequired from './PasswordChangeRequired'
 
 function RootLayout() {
-	const { isAuthenticated } = useAuth()
+	const { isAuthenticated, user } = useAuth()
 	const { pathname } = useLocation()
 	const [sidebarOpen, setSidebarOpen] = useState(false)
-	const showSidebar = isAuthenticated && pathname !== '/login' && pathname !== '/solicitud-evento' && pathname !== '/evaluar-evento' && pathname !== '/*'
+	const showSidebar = isAuthenticated && pathname !== '/login' && pathname !== '/solicitud-evento' && pathname !== '/evaluar-evento' && pathname !== '/landing' && pathname !== '/*'
+
+	if (user?.debeCambiarPassword) return <PasswordChangeRequired />
 
 	return (
 		showSidebar ? (

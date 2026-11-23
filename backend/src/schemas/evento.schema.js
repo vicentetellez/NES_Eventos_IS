@@ -99,6 +99,7 @@ export const createEventoSchema = z.object({
                     required_error: "La cantidad de personas del evento es obligatoria."
                 })
                 .min(1, "El evento debe tener al menos 1 persona.")
+                .max(100000, "El evento no puede superar las 100.000 personas.")
                 .int("La cantidad de personas del evento debe ser un número entero.")
                 .positive("La cantidad de personas del evento debe ser un número positivo."),
             tipoEventoCliente: z

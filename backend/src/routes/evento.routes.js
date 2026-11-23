@@ -21,6 +21,7 @@ import {
     getAlertasPagoPendienteController,
     getEventoByCodigoController,
     getEventoByCodigoEvaluacionController,
+    getEstadisticasPublicasController,
     solicitudEventoController,
     updateEventoController,
     deleteEventoController,
@@ -28,6 +29,8 @@ import {
 } from '../controllers/evento.controller.js';
 
 const router = Router();
+
+router.get('/estadisticas-publicas', getEstadisticasPublicasController);
 
 router.get('/alertas/pagos-pendientes',
             authenticateJwt,

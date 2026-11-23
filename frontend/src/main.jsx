@@ -5,6 +5,7 @@ import Root from './pages/Root'
 import Home from './pages/Home'
 import Error404 from './pages/Error404'
 import Login from './pages/Login'
+import Landing from './pages/Landing.jsx'
 import FormularioSolicitud from './pages/SolicitudEvento.jsx'
 import FormularioEvaluacion from './pages/resenaEvento.jsx'
 import CalendarioEvento from './pages/Calendario.jsx'
@@ -18,6 +19,7 @@ import EventosOrganizando from './pages/EventosOrganizando.jsx'
 import AsignacionEvento from './pages/AsignacionEvento.jsx'
 import ResenasEventos from './pages/MostrarResenaEvento.jsx'
 import Perfil from './pages/Perfil.jsx'
+import PanelUsuarios from './pages/PanelUsuarios.jsx'
 
 import './styles/style.css'
 
@@ -29,11 +31,15 @@ const router = createBrowserRouter([
     children: [
       { 
         index: true, 
-        element: <Navigate to="/login" replace /> 
+        element: <Navigate to="/landing" replace /> 
       },
       {
         path: 'login',
         element: <Login />,
+      },
+      {
+        path: 'landing',
+        element: <Landing />,
       },
       {
         path: 'home',
@@ -78,6 +84,10 @@ const router = createBrowserRouter([
       {
         path: 'panel/mi-perfil',
         element: <Perfil />,
+      },
+      {
+        path: 'panel/usuarios',
+        element: <PanelUsuarios />,
       },
       {
         path: 'panel/eventos-organizando',
