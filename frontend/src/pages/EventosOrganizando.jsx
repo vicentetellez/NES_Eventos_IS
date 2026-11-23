@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { avanzarEstadoEvento } from '../services/evento.service.js';
 import { descargarPdfSegundoAbono, listarPresupuestos } from '../services/presupuesto.service.js';
-import { ETIQUETAS_ESTADO_PRESUPUESTO, formatoCLP, formatoFecha } from '../utils/presupuesto.js';
+import { ETIQUETAS_ESTADO_PRESUPUESTO, formatoCLP, formatoFecha, numeroEvento } from '../utils/presupuesto.js';
 
 export default function EventosOrganizando() {
   const [presupuestos, setPresupuestos] = useState([]);
@@ -51,7 +51,7 @@ export default function EventosOrganizando() {
   const pasarAPagoFinal = async (presupuesto) => {
     const saldo = presupuesto.total - (presupuesto.evento.montoAbono ?? 0);
     const confirmado = window.confirm(
-      `¿Pasar el evento #${presupuesto.codigoEvento} a pago final? El saldo del segundo abono es ${formatoCLP(saldo)}.`
+      `¿Pasar el evento ${numeroEvento(presupuesto.evento.numeroVisible)} a pago final? El saldo del segundo abono es ${formatoCLP(saldo)}.`
     );
     if (!confirmado) return;
 
@@ -61,7 +61,7 @@ export default function EventosOrganizando() {
     try {
       await avanzarEstadoEvento(presupuesto.codigoEvento, { estadoDestino: 'PENDIENTE_PAGO_FINAL' });
       setPresupuestos(await obtenerDatos());
-      setAviso(`Evento #${presupuesto.codigoEvento} pasó a PENDIENTE PAGO FINAL.`);
+      setAviso(`Evento ${numeroEvento(presupuesto.evento.numeroVisible)} pasó a PENDIENTE PAGO FINAL.`);
     } catch (errorAccion) {
       setError(errorAccion.message);
     } finally {
@@ -130,7 +130,7 @@ export default function EventosOrganizando() {
                         to={`/panel/presupuestos/${presupuesto.codigoEvento}`}
                         className="text-[#c9a84c] hover:underline"
                       >
-                        #{presupuesto.codigoEvento}
+                        {numeroEvento(presupuesto.evento.numeroVisible)}
                       </Link>
                     </td>
                     <td className="px-4 py-3">{presupuesto.evento.clienteNombre ?? '—'}</td>

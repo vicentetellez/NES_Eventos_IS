@@ -13,7 +13,6 @@ function nombreCompleto(persona) {
     return [persona.nombre, persona.primerApellido, persona.segundoApellido].filter(Boolean).join(' ');
 }
 
-// Rango en minutos desde las 00:00 del día del evento (montaje y desmontaje incluidos en la duración)
 function calcularRangoMinutos(evento) {
     const inicio = evento.horaInicio.getUTCHours() * 60 + evento.horaInicio.getUTCMinutes();
     const duracion = (evento.horasEvento + (evento.horasMontajeDesmontaje ?? 0)) * 60;
@@ -43,7 +42,6 @@ function validarEstadoAsignable(evento) {
     }
 }
 
-// Devuelve, por trabajador, el evento de la misma fecha con el que se solapa (si existe)
 async function buscarConflictos(cliente, evento, ruts) {
     if (ruts.length === 0) return new Map();
 
@@ -59,7 +57,7 @@ async function buscarConflictos(cliente, evento, ruts) {
         select: {
             rutTrabajador: true,
             evento: {
-                select: { codigo: true, horaInicio: true, horasEvento: true, horasMontajeDesmontaje: true }
+                select: { codigo: true, numeroVisible: true, horaInicio: true, horasEvento: true, horasMontajeDesmontaje: true }
             }
         }
     });
@@ -67,7 +65,7 @@ async function buscarConflictos(cliente, evento, ruts) {
     const conflictos = new Map();
     for (const participacion of participaciones) {
         if (haySolapamiento(evento, participacion.evento)) {
-            conflictos.set(participacion.rutTrabajador, participacion.evento.codigo);
+            conflictos.set(participacion.rutTrabajador, participacion.evento);
         }
     }
     return conflictos;
@@ -125,7 +123,8 @@ export async function listarCatalogoTrabajadores(codigoEvento, { codigoEspeciali
             aniosExperiencia: trabajador.aniosExperiencia,
             especialidades: trabajador.especialidades.map(({ especialidad }) => especialidad),
             asignadoEnEvento: trabajador.participaciones.length > 0,
-            codigoEventoConflicto: conflictos.get(trabajador.rut) ?? null,
+            codigoEventoConflicto: conflictos.get(trabajador.rut)?.codigo ?? null,
+            numeroEventoConflicto: conflictos.get(trabajador.rut)?.numeroVisible ?? null,
             disponible: trabajador.participaciones.length === 0 && !conflictos.has(trabajador.rut)
         }))
         .filter((trabajador) => !soloDisponibles || trabajador.disponible)
@@ -192,6 +191,7 @@ export async function listarTrabajadoresAsignados(codigoEvento) {
         .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
     return {
+        numeroVisible: evento.numeroVisible,
         total: participaciones.length,
         requerimientos,
         asignaciones: participaciones.map((participacion) => ({
@@ -232,12 +232,11 @@ export async function asignarTrabajador(codigoEvento, { rutTrabajador, codigoEsp
         const conflictos = await buscarConflictos(tx, evento, [rutTrabajador]);
         if (conflictos.has(rutTrabajador)) {
             throw new AppError(
-                `El trabajador ya está asignado al evento ${conflictos.get(rutTrabajador)} en un horario que se solapa`,
+                'El trabajador ya está asignado a otro evento en un horario que se solapa',
                 409
             );
         }
 
-        // Los internos tienen sueldo fijo: no se cobran por hora (tarifa 0). Los externos, con su tarifa acordada.
         let tarifaFinal = 0;
         if (trabajador.esExterno) {
             tarifaFinal = tarifaHoraAcordada ?? especialidad.tarifaHoraReferencial;

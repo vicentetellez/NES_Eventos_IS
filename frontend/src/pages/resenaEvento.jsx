@@ -213,7 +213,7 @@ export default function ResenaEvento() {
 
         {paso === 0 ? (
           <section className="rounded-xl border border-white/10 bg-[#131622] p-5 shadow-xl shadow-black/20 sm:p-9">
-            <p className="mb-3 text-xs font-bold tracking-[0.2em] text-[#c9a84c]">EVENTO · #{evento.codigo}</p>
+            <p className="mb-3 text-xs font-bold tracking-[0.2em] text-[#c9a84c]">EVENTO · {evento.numeroVisible == null ? 'Sin número' : `#${evento.numeroVisible}`}</p>
             <h1 className="font-serif text-3xl sm:text-4xl">¿Cómo fue tu experiencia?</h1>
             <p className="mb-7 mt-3 text-sm leading-6 text-[#f0ece4]/55">Responde estas preguntas sobre el servicio que recibiste.</p>
             <div>

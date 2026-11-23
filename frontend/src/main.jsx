@@ -3,12 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import Root from './pages/Root'
 import Home from './pages/Home'
-// Publicas (Sin sidebar)
 import Error404 from './pages/Error404'
 import Login from './pages/Login'
 import FormularioSolicitud from './pages/SolicitudEvento.jsx'
 import FormularioEvaluacion from './pages/resenaEvento.jsx'
-// Privadas (Con sidebar y JWT)
 import CalendarioEvento from './pages/Calendario.jsx'
 import RankingTrabajadores from './pages/RankingTrabajadores.jsx'
 import PanelCatalogo from './pages/PanelCatalogo.jsx'

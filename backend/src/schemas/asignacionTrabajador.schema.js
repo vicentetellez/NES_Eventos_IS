@@ -4,7 +4,6 @@ import { rutSchema } from 'rut-kit/zod';
 export const asignarTrabajadorSchema = z.object({
     rutTrabajador: rutSchema,
     codigoEspecialidad: z.number().int().positive(),
-    // Solo aplica a trabajadores externos. Si se omite se usa la tarifa referencial de la especialidad.
     tarifaHoraAcordada: z.number().int().positive().optional()
 }).strict();
 

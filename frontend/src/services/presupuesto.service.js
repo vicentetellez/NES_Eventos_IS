@@ -75,7 +75,6 @@ export const getVistaPreviaCantidadPersonas = (codigoEvento, cantidadPersonas) =
     'Error al obtener la vista previa'
   );
 
-// El PDF llega como binario: se descarga desde el servicio para que las paginas no toquen el DOM ni el backend
 export const descargarPdfSegundoAbono = async (codigoEvento) => {
   try {
     const respuesta = await api.get(`/presupuestos/evento/${codigoEvento}/pdf-segundo-abono`, {
@@ -84,7 +83,7 @@ export const descargarPdfSegundoAbono = async (codigoEvento) => {
     const url = URL.createObjectURL(respuesta.data);
     const enlace = document.createElement('a');
     enlace.href = url;
-    enlace.download = `segundo-abono-evento-${codigoEvento}.pdf`;
+    enlace.download = 'segundo-abono.pdf';
     document.body.appendChild(enlace);
     enlace.click();
     enlace.remove();
@@ -95,7 +94,6 @@ export const descargarPdfSegundoAbono = async (codigoEvento) => {
       const texto = await error.response?.data?.text();
       mensaje = JSON.parse(texto).message || mensaje;
     } catch {
-      // se mantiene el mensaje por defecto
     }
     const errorServicio = new Error(mensaje);
     errorServicio.status = error.response?.status;

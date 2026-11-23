@@ -7,7 +7,7 @@ import {
   listarTrabajadoresAsignados,
 } from '../services/asignacionTrabajador.service.js';
 import { actualizarEquiposEvento, listarEquiposEvento } from '../services/equipoEvento.service.js';
-import { formatoCLP } from '../utils/presupuesto.js';
+import { formatoCLP, numeroEvento } from '../utils/presupuesto.js';
 
 const botonPrimario =
   'h-10 rounded-lg bg-[#c9a84c] px-4 text-xs font-bold text-[#0a0c10] transition hover:bg-[#d8b85d] disabled:cursor-not-allowed disabled:opacity-50';
@@ -20,6 +20,7 @@ export default function AsignacionEvento() {
   const { codigo } = useParams();
   const codigoEvento = Number(codigo);
   const [trabajadores, setTrabajadores] = useState([]);
+  const [numeroVisible, setNumeroVisible] = useState(null);
   const [asignados, setAsignados] = useState([]);
   const [requerimientos, setRequerimientos] = useState([]);
   const [equipos, setEquipos] = useState([]);
@@ -41,6 +42,7 @@ export default function AsignacionEvento() {
 
   const aplicarDatos = useCallback(([datosTrabajadores, datosAsignados, datosEquipos]) => {
     setTrabajadores(datosTrabajadores.trabajadores);
+    setNumeroVisible(datosAsignados.numeroVisible);
     setAsignados(datosAsignados.asignaciones);
     setRequerimientos(datosAsignados.requerimientos);
     setEquipos(datosEquipos.asignaciones);
@@ -162,7 +164,7 @@ export default function AsignacionEvento() {
         <header className="mb-8 flex flex-wrap items-end justify-between gap-5 border-b border-white/10 pb-7">
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#c9a84c]">Organización del evento</p>
-            <h1 className="text-2xl font-semibold sm:text-3xl">Personal y equipos · Evento #{codigoEvento}</h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl">Personal y equipos · Evento {numeroEvento(numeroVisible)}</h1>
             <p className="mt-2 text-sm text-[#f0ece4]/50">
               Asigna manualmente al personal requerido y ajusta el equipo aprobado para este evento.
             </p>
@@ -257,7 +259,7 @@ export default function AsignacionEvento() {
                             </select>
                           </td>
                           <td className={`px-3 py-3 ${trabajador.disponible ? 'text-emerald-300' : 'text-amber-300'}`}>
-                            {trabajador.asignadoEnEvento ? 'Ya asignado a este evento' : trabajador.disponible ? 'Disponible' : `Conflicto con evento #${trabajador.codigoEventoConflicto}`}
+                            {trabajador.asignadoEnEvento ? 'Ya asignado a este evento' : trabajador.disponible ? 'Disponible' : `Conflicto con evento ${numeroEvento(trabajador.numeroEventoConflicto)}`}
                           </td>
                           <td className="px-3 py-3 text-right">
                             {trabajador.esExterno ? (

@@ -7,6 +7,7 @@ import {
   estiloEstadoPresupuesto,
   formatoCLP,
   formatoFecha,
+  numeroEvento,
 } from '../utils/presupuesto.js';
 
 const FILTROS = ['TODOS', 'BORRADOR', 'PENDIENTE_VALIDACION', 'VALIDADO', 'RECHAZADO'];
@@ -21,7 +22,6 @@ export default function Presupuestos() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // El backend responde 404 cuando no hay eventos en ese estado
   const obtenerDatos = useCallback(async () => {
     const [resultadoPresupuestos, cotizando, solicitados] = await Promise.all([
       listarPresupuestos(),
@@ -56,7 +56,7 @@ export default function Presupuestos() {
 
   const iniciarCotizacion = async (evento) => {
     const nombre = evento.cliente?.persona?.nombre ?? 'el cliente';
-    if (!window.confirm(`¿Iniciar la cotización del evento #${evento.codigo} de ${nombre}?`)) return;
+    if (!window.confirm(`¿Iniciar la cotización del evento ${numeroEvento(evento.numeroVisible)} de ${nombre}?`)) return;
 
     setIniciando(evento.codigo);
     setError('');
@@ -116,7 +116,7 @@ export default function Presupuestos() {
                     <div key={evento.codigo} className="flex flex-col justify-between rounded-xl border border-white/10 bg-[#131622] p-5">
                       <div>
                         <p className="text-xs uppercase tracking-wider text-[#f0ece4]/50">
-                          Evento {evento.codigoEvaluacion}
+                          Evento {numeroEvento(evento.numeroVisible)}
                         </p>
                         <p className="mt-1 text-base font-semibold">{evento.cliente?.persona?.nombre ?? 'Cliente'}</p>
                         <p className="mt-1 text-sm text-[#f0ece4]/50">Fecha: {formatoFecha(evento.fechaEvento)}</p>
@@ -153,7 +153,7 @@ export default function Presupuestos() {
                       className="group rounded-xl border border-white/10 bg-[#131622] p-5 transition hover:border-[#c9a84c]/50 focus:outline-none focus:ring-2 focus:ring-[#c9a84c]"
                     >
                       <p className="text-xs uppercase tracking-wider text-[#f0ece4]/50">
-                        Evento {evento.codigoEvaluacion}
+                        Evento {numeroEvento(evento.numeroVisible)}
                       </p>
                       <p className="mt-1 text-base font-semibold group-hover:text-[#c9a84c]">
                         {evento.cliente?.persona?.nombre ?? 'Cliente'}
@@ -210,7 +210,7 @@ export default function Presupuestos() {
                     )}
                     {visibles.map((presupuesto) => (
                       <tr key={presupuesto.codigo} className="border-b border-white/5 last:border-0">
-                        <td className="px-4 py-3">#{presupuesto.codigoEvento}</td>
+                        <td className="px-4 py-3">{numeroEvento(presupuesto.evento.numeroVisible)}</td>
                         <td className="px-4 py-3">{presupuesto.evento.clienteNombre ?? '—'}</td>
                         <td className="px-4 py-3">{formatoFecha(presupuesto.evento.fechaEvento)}</td>
                         <td className="px-4 py-3 text-[#f0ece4]/65">

@@ -1,7 +1,6 @@
 import { AppError } from '../helpers/responses.js';
 import prisma from '../config/prisma.js';
 
-// El GERENTE hereda todo lo que puede hacer un STAFF
 export function verifyRoles(...rolesPermitidos) {
     return (req, res, next) => {
         try {
@@ -23,7 +22,6 @@ export function verifyRoles(...rolesPermitidos) {
     };
 }
 
-// Bloquea cualquier acción hasta que el usuario cambie una contraseña provisoria (asignada por un reset de ADMIN).
 export async function blockIfPasswordChangeRequired(req, res, next) {
     try {
         const usuario = await prisma.usuario.findUnique({

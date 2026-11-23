@@ -9,7 +9,6 @@ export const CATEGORIAS_DETALLE = [
     'AJUSTE_EVENTO'
 ];
 
-// AJUSTE_EVENTO lo genera solo el sistema (cobro extra por aumentar invitados u horas después del primer abono)
 export const CATEGORIA_AJUSTE_EVENTO = 'AJUSTE_EVENTO';
 export const CATEGORIAS_EDITABLES = CATEGORIAS_DETALLE.filter((categoria) => categoria !== CATEGORIA_AJUSTE_EVENTO);
 
@@ -78,7 +77,6 @@ export function crearDetalle({ categoria, descripcion, cantidad, precioUnitario,
     };
 }
 
-// El margen solo se aplica al costo del equipamiento arrendado a terceros (el subtotal de la línea es el costo).
 export function calcularTotales(detalles) {
     const subtotal = detalles.reduce((suma, detalle) => suma + detalle.subtotal, 0);
     const baseMargen = detalles
@@ -98,9 +96,6 @@ export function calcularPrimerAbono(total) {
     return Math.round(total * PORCENTAJE_PRIMER_ABONO);
 }
 
-// Genera las líneas base que se precargan en el formulario de presupuesto (el staff las puede modificar).
-// - El personal fijo (sueldo mensual) no se cobra: su costo está cubierto por la tarifa base del evento.
-// - El personal externo se estima con la tarifa referencial hasta que se asigne con su tarifa acordada.
 export function calcularCotizacionInicial({
     tipoEvento = null,
     horasEvento,
@@ -145,7 +140,6 @@ export function calcularCotizacionInicial({
         if (cantidad === 0) continue;
 
         if (tieneEquipo) {
-            // Un equipo sin tarifa referencial se precarga en 0 para que el staff complete el precio.
             const tarifaHora = plantilla.equipo.arriendoHoraReferencial ?? 0;
             detalles.push(crearDetalle({
                 categoria: 'EQUIPAMIENTO',

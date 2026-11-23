@@ -10,11 +10,9 @@ export const getAllUsuariosByFilterStatusSchema = z.object({
         .string({
             required_error: "El estado activo es obligatorio."
         })
-        // 1. Validamos que el string sea exactamente "true" o "false"
         .refine((value) => value === "true" || value === "false", {
             message: "El estado activo debe ser 'true' o 'false'."
         })
-        // 2. Transformamos el string validado en un Boolean real
         .transform((value) => value === "true")
 }).strict();
 

@@ -33,7 +33,6 @@ const router = Router();
 
 const autenticado = [authenticateJwt, blockIfPasswordChangeRequired, blockIfNotActive];
 
-// verifyRoles('STAFF') también habilita al GERENTE (hereda lo que puede hacer el staff)
 router.get('/',
     ...autenticado,
     verifyRoles('ADMIN', 'STAFF'),

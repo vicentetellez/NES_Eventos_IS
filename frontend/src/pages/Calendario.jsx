@@ -230,7 +230,7 @@ export default function CalendarioEvento() {
                     return (
                       <div key={`${evento.codigo}-${index}`} className={`flex items-center gap-1 rounded border px-1 py-0.5 text-[9px] font-semibold ${classes.pill}`}>
                         <span className={`inline-block size-1.5 shrink-0 rounded-full ${classes.dot}`} />
-                        <span className="truncate">#{evento.codigo}</span>
+                        <span className="truncate">{evento.numeroVisible == null ? 'Sin número' : `#${evento.numeroVisible}`}</span>
                       </div>
                     );
                   })}
@@ -273,7 +273,7 @@ export default function CalendarioEvento() {
                     <article key={evento.codigo} className={`rounded-lg border p-4 transition ${classes.hover} ${classes.shell}`}>
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${classes.pill}`}>{color}</span>
-                        <strong className="text-xs font-semibold text-[#f0ece4]/55">#{evento.codigo}</strong>
+                        <strong className="text-xs font-semibold text-[#f0ece4]/55">{evento.numeroVisible == null ? 'Sin número' : `#${evento.numeroVisible}`}</strong>
                       </div>
 
                       <h3 className="mb-4 text-sm font-semibold text-[#c9a84c]">{evento.codigoEvaluacion || 'Sin código'}</h3>
